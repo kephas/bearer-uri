@@ -1,0 +1,112 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="lib/rfc2629.xslt"?>
+<?rfc toc="yes" ?>
+<?rfc symrefs="yes" ?>
+<?rfc sortrefs="yes" ?>
+<?rfc compact="yes"?>
+<?rfc subcompact="no" ?>
+<?rfc linkmailto="no" ?>
+<?rfc editing="no" ?>
+<?rfc comments="yes"?>
+<?rfc inline="yes"?>
+<?rfc rfcedstyle="yes"?>
+<?rfc-ext allow-markup-in-artwork="yes" ?>
+<?rfc-ext include-index="no" ?>
+
+<rfc ipr="trust200902"
+     category="exp"
+     submissionType="IETF"
+     docName="draft-thierry-bearer-uri-00"
+     xmlns:xi="http://www.w3.org/2001/XInclude">
+  <front>
+    <title>Bearer URI</title>
+
+    <author initials="P." surname="Thierry" fullname="Pierre Thierry">
+      <organization>Comonad Dev</organization>
+      <address>
+        <email>pierre@comonad.dev</email>
+      </address>
+    </author>
+
+    <date day="22" month="07" year="2026" />
+    <keyword>capabilities</keyword>
+    <keyword>authorization</keyword>
+
+    <abstract>
+      <t>
+        This specification describes several URI schemes to embed bearer tokens as authorization
+        within URIs.
+      </t>
+    </abstract>
+
+  </front>
+
+  <middle>
+    <section anchor="intro" title="Introduction">
+      <section title="Rationale">
+        <t>The research on access control has shown that between the two major paradigm of access
+        control, access control lists (ACLs) are less expressive and usually open the possibility of
+        confused deputy attacks, which include some the most problematic attack surfaces of the Web,
+	like XSRF. The ambient authority inherent to ACLs is also often critical in enabling
+	privilege escalation, making one security flaw vastly more damaging.</t>
+	<t>The other paradigm, capability-based security, combines designation and permission,
+	making it possible to prevent confused deputy attacks and create new patterns of access
+	control, including composable security policies and safe delegation mechanisms.</t>
+	<t>HTTP/S URIs could be used as capabilities, but as HTTP/S URIs are not treated as
+	sensitive data by most systems, except for their authorization part (which has been
+	deprecated since), it opens up the possibility that capabilities would get leaked in various
+	problematic places, including being stored in server logs and shown in browser address
+	bars.</t>
+	<t>This specification describes URI schemes that make it possible to safely encode
+	capabilities as URIs by combining a normal HTTP/S and a bearer token, called bearer-URIs.</t>
+      </section>
+      <section title="Conventions and Terminology">
+        <t>
+          The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD
+          NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as
+          described in <xref target="BCP14"/>.
+        </t>
+      </section>
+    </section>
+
+    <section title="The bearer schemes" anchor="schemes">
+      <section title="Principle of operation">
+	<t>When a bearer-URI-aware HTTP agent is asked to make an HTTP request to a resource
+	identified by a <tt>bearer-http</tt> (with parameters like the method or the request body),
+	it MUST extract from that bearer-URI the bearer token and the HTTP URI, and prepare the HTTP
+	request with the given parameters but put the bearer token in the <tt>Authorization</tt>
+	header with the <tt>Bearer</tt> authorization scheme: (<xref target="RFC6750"/>)</t>
+	
+      </section>
+    </section>
+
+    <section title="Security Considerations" anchor="sec">
+      <section title="Parsing">
+	<t>TODO: POLA, revocation</t>
+      </section>
+    </section>
+
+    <section title="IANA Considerations">
+      <t>
+	This specification defines several new URI schemes. Here are the informations for
+	its registration to IANA:
+      </t>
+    </section>
+
+    <section title="Acknowledgements">
+    </section>
+  </middle>
+
+  <back>
+    <references title="Normative References">
+      <xi:include href="https://bib.ietf.org/public/rfc/bibxml-rfcsubseries/reference.BCP.14.xml"/>
+      <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.6750.xml"/>
+    </references>
+
+    <references title="Informative references">
+    </references>
+
+
+  </back>
+</rfc>
+
