@@ -19,7 +19,7 @@
      docName="draft-thierry-bearer-uri-00"
      xmlns:xi="http://www.w3.org/2001/XInclude">
   <front>
-    <title>Bearer URI</title>
+    <title>Bearer URIs</title>
 
     <author initials="P." surname="Thierry" fullname="Pierre Thierry">
       <organization>Comonad Dev</organization>
@@ -28,7 +28,7 @@
       </address>
     </author>
 
-    <date day="22" month="07" year="2026" />
+    <date day="03" month="08" year="2026" />
     <keyword>capabilities</keyword>
     <keyword>authorization</keyword>
 
@@ -44,21 +44,25 @@
   <middle>
     <section anchor="intro" title="Introduction">
       <section title="Rationale">
-        <t>The research on access control has shown that between the two major paradigm of access
+        <t>The research on access control has shown that between the two major paradigms of access
         control, access control lists (ACLs) are less expressive and usually open the possibility of
         confused deputy attacks, which include some the most problematic attack surfaces of the Web,
-	like XSRF. The ambient authority inherent to ACLs is also often critical in enabling
-	privilege escalation, making one security flaw vastly more damaging.</t>
+        like XSS and CSRF (cf. <xref target="aclsdont" format="title"/>). The ambient authority
+        inherent to ACLs is also often critical in enabling privilege escalation, making one
+        security flaw vastly more damaging.</t>
 	<t>The other paradigm, capability-based security, combines designation and permission,
 	making it possible to prevent confused deputy attacks and create new patterns of access
-	control, including composable security policies and safe delegation mechanisms.</t>
+	control, including composable security policies and safe delegation mechanisms. (cf. <xref
+	target="capmyths" format="title"/>)</t>
 	<t>HTTP/S URIs could be used as capabilities, but as HTTP/S URIs are not treated as
-	sensitive data by most systems, except for their authorization part (which has been
-	deprecated since), it opens up the possibility that capabilities would get leaked in various
+	sensitive data by most systems, except for their authorization part (but the classical
+	format <tt>login:password</tt> has been deprecated since, cf. <xref target="RFC3986"/>,
+	section 3.2.1), it opens up the possibility that capabilities would get leaked in various
 	problematic places, including being stored in server logs and shown in browser address
 	bars.</t>
 	<t>This specification describes URI schemes that make it possible to safely encode
-	capabilities as URIs by combining a normal HTTP/S and a bearer token, called bearer-URIs.</t>
+	capabilities as URIs by combining an existing URI and a bearer token into a URI, called
+	bearer-URI.</t>
       </section>
       <section title="Conventions and Terminology">
         <t>
@@ -67,43 +71,282 @@
           described in <xref target="BCP14"/>.
         </t>
       </section>
+      <section title="Syntax Notation">
+	<t>This specification uses the Augmented Backus-Naur Form (ABNF) notation of <xref
+	target="RFC5234"/>.</t>
+      </section>
     </section>
 
     <section title="The bearer schemes" anchor="schemes">
       <section title="Principle of operation">
-	<t>When a bearer-URI-aware HTTP agent is asked to make an HTTP request to a resource
-	identified by a <tt>bearer-http</tt> (with parameters like the method or the request body),
-	it MUST extract from that bearer-URI the bearer token and the HTTP URI, and prepare the HTTP
-	request with the given parameters but put the bearer token in the <tt>Authorization</tt>
-	header with the <tt>Bearer</tt> authorization scheme: (<xref target="RFC6750"/>)</t>
-	
+	<t>
+	  When a bearer-URI-aware HTTP agent (like a browser or library) is asked to make an HTTP
+	  request to a resource identified by a <tt>bearer-http</tt> URI (with parameters like the
+	  method or the request body), it extracts from that bearer-URI the bearer token and the
+	  HTTP URI, and prepare the HTTP request with the given parameters but put the bearer token
+	  in the <tt>Authorization</tt> header with the <tt>Bearer</tt> authorization scheme: (<xref
+	  target="RFC6750"/>):
+	</t>
+	<t><figure><artwork>
+http.post("bearer-http://AViRTF9ppWiAtdnpVtVHDQ@example.com/foo", body="bar",
+  headers={"Content-Type": "text/plain"})
+	</artwork></figure></t>
+	<t>would produce the following HTTP request:</t>
+	<t><figure><artwork>
+POST /foo HTTP/1.1
+Host: example.com
+Content-Type: text/plain
+Authorization: Bearer AViRTF9ppWiAtdnpVtVHDQ
+
+bar
+	</artwork></figure></t>
+	<t>
+	  The URI embedded in an absolute bearer-URI is the same URI with only two transformations:
+	  <list style="symbol">
+	    <t>removal of the authority</t>
+	    <t>replacement of the scheme</t>
+	  </list>
+	</t>
+	<table>
+	  <thead><tr><th>Bearer URI scheme</th><th>Embedded URI scheme</th><th/></tr></thead>
+	  <tbody>
+	    <tr><td><tt>bearer-http</tt></td><td><tt>http</tt> <xref target="RFC9110"/></td><td>(see <xref target="notls"
+	    format="title"/> about the security considerations)</td></tr>
+	    <tr><td><tt>bearer-https</tt></td><td><tt>https</tt> <xref target="RFC9110"/></td><td/></tr>
+	    <tr><td><tt>bearer-ws</tt></td><td><tt>ws</tt> <xref target="RFC6455"/></td><td>(see <xref target="notls"
+	    format="title"/> about the security considerations)</td></tr>
+	    <tr><td><tt>bearer-wss</tt></td><td><tt>wss</tt> <xref target="RFC6455"/></td><td/></tr>
+	  </tbody>
+	</table>
+	<t>
+	  As far as the bearer-URI-aware agent is concerned, the URI of the designated resource MUST
+	  NOT be the embedded HTTP URI, but the bearer-URI (the retrieval URI is one source for a
+	  base URI).
+	</t>
+      </section>
+      <section title="Relative URI references">
+	<t>
+	  The normal algorithm from <xref target="RFC3986"/> (section 5.2) applies to relative
+	  references, which means that except for network-path references with a userinfo component,
+	  relative references reuse the same bearer token used to retrieve the resource
+	  representation where they appear.
+	</t>
+	<t>
+	  For that reason, the bearer schemes include a dedicated syntax to use a relative path with
+	  a different token: <tt>bearer-https:NVW9YpUuEkZ367AyA-3MZw@./bar</tt>. Note that when such
+	  a relative bearer-URI is parsed by a generic URI parser, the whole content after the
+	  scheme will match the <tt>path-rootless</tt> rule of <xref target="RFC3986"/> (and the
+	  token won't be parsed by the <tt>authority</tt> rule).
+	</t>
+	<t>
+	  To make a relative reference with an absolute path, a network-path reference can be used:
+	  <tt>//D-nX3h-tDq_VtaYQKYYlDw@/baz</tt>. If there could be ambiguity whether the base URI
+	  is a bearer-URI, it is valid for bearer-URIs to have an empty host, which creates a URI
+	  that is equivalent to a network-path reference, but with the scheme specified:
+	  <tt>bearer-https://D-nX3h-tDq_VtaYQKYYlDw@/baz</tt>.
+	</t>
+      </section>
+      <section title="Definitions">
+	<t>
+	  The four URI schemes are specified by the rules
+	  <list style="symbol">
+	    <t><tt>bearer-http-uri</tt></t>
+	    <t><tt>bearer-https-uri</tt></t>
+	    <t><tt>bearer-ws-uri</tt></t>
+	    <t><tt>bearer-wss-uri</tt></t>
+	  </list>
+	</t>
+	<t><figure><artwork>
+bearer-http-uri      = "bearer-http" ":" bearer-path [ "?" query ] [ "#" fragment ]
+bearer-https-uri     = "bearer-https" ":" bearer-path [ "?" query ] [ "#" fragment ]
+bearer-ws-uri        = "bearer-ws" ":" bearer-path [ "?" query ]
+bearer-wss-uri       = "bearer-wss" ":" bearer-path [ "?" query ]
+bearer-path          = absolute-bearer-path / relative-bearer-path
+absolute-bearer-path = "//" token "@" host [ ":" port ] path-abempty
+token                = *( unreserved / pct-encoded / sub-delims )
+relative-bearer-path = token "@" segment-rel "/" path-rootless
+segment-rel          = "." / ".."
+	</artwork></figure></t>
+	<t>The definitions of the following rules are adopted from the generic syntax of URI:</t>
+	<t><figure><artwork>
+host          = &lt;host, see [RFC3986], Section 3.2.2>
+port          = &lt;port, see [RFC3986], Section 3.2.3>
+path-abempty  = &lt;path-abempty, see [RFC3986], Section 3.3>
+path-rootless = &lt;path-rootless, see [RFC3986], Section 3.3>
+unreserved    = &lt;unreserved, see [RFC3986], Section 2.3>
+pct-encoded   = &lt;pct-encoded, see [RFC3986], Section 2.1>
+sub-delims    = &lt;sub-delims, see [RFC3986], Section 2.2>
+query         = &lt;query, see [RFC3986], Section 3.4>
+fragment      = &lt;fragment, see [RFC3986], Section 3.5>
+	</artwork></figure></t>
+	<t>
+	  If the <tt>token</tt> component of the bearer-URI is empty, it means that the
+	  <tt>Authorization</tt> header MUST be absent from the request.
+	</t>
+	<t>
+	  If the <tt>host</tt> component of the bearer-URI is empty, the URI is relative and is
+	  valid only if there is a known base URI (cf. <xref target="RFC3986"/>, section
+	  5.1). Resolving the relative bearer-URI consists in creating a target bearer-URI where
+	  every component is taken from the relative bearer-URI except the host, taken from the base
+	  URI.
+	</t>
       </section>
     </section>
 
     <section title="Security Considerations" anchor="sec">
-      <section title="Parsing">
-	<t>TODO: POLA, revocation</t>
+      <section anchor="notls" title="Using bearer tokens without TLS">
+	<t>
+	  <xref target="RFC6750"/> mandates the use of <xref target="RFC9846">TLS</xref> because
+	  transmitting bearer tokens on an unprotected channel is deemed too risky in the use case
+	  of OAuth. But fine grained capabilities have a wider use case than OAuth and may be used
+	  between services where security is guaranteed at a different layer, like <xref
+	  target="RFC6071">IPsec</xref> or when services are communicating on a dedicated virtual
+	  network (which is typical in some cloud deployments). For this reason, this specification
+	  describes the use of bearer tokens both with and without TLS.
+	</t>
+	<t>
+	  Of course, <tt>bearer-http</tt> URIs SHOULD never be used over an unprotected
+	  channel. Doing so would make it possible for an observer anywhere on the path between the
+	  client and the server to store and reuse any capability that isn't otherwise limited in
+	  its use.
+	</t>
+      </section>
+      <section title="TODO: POLA">
+	<t></t>
+      </section>
+      <section title="TODO: revocation">
+	<t></t>
       </section>
     </section>
 
     <section title="IANA Considerations">
       <t>
 	This specification defines several new URI schemes. Here are the informations for
-	its registration to IANA:
+	their registration to IANA according to <xref target="BCP35"/>.
       </t>
+      <section title="bearer-http">
+	<list style="hanging">
+	  <t hangText="Scheme name"><tt>bearer-http</tt></t>
+	  <t hangText="Status">Provisional</t>
+	  <t hangText="Applications/protocols that use this scheme name">TBD</t>
+	</list>
+      </section>
+      <section title="bearer-https">
+	<list style="hanging">
+	  <t hangText="Scheme name"><tt>bearer-https</tt></t>
+	  <t hangText="Status">Provisional</t>
+	  <t hangText="Applications/protocols that use this scheme name">TBD</t>
+	</list>
+      </section>
+      <section title="bearer-ws">
+	<list style="hanging">
+	  <t hangText="Scheme name"><tt>bearer-ws</tt></t>
+	  <t hangText="Status">Provisional</t>
+	  <t hangText="Applications/protocols that use this scheme name">TBD</t>
+	</list>
+      </section>
+      <section title="bearer-wss">
+	<list style="hanging">
+	  <t hangText="Scheme name"><tt>bearer-wss</tt></t>
+	  <t hangText="Status">Provisional</t>
+	  <t hangText="Applications/protocols that use this scheme name">TBD</t>
+	</list>
+      </section>
     </section>
 
     <section title="Acknowledgements">
+      <t>
+	The idea of a bearer-URI was independently discovered by several people before this
+      specification was imagined and written, and its final form draws a lot of elements from the
+      work of Neil Madden (<xref target="neilmadden" format="title"/>), Ariadne Conill (<xref
+      target="ariadneconill" format="title"/>) and Christine Lemmber-Webber.
+      </t>
+      <t>
+	The <tt>bearcap</tt> URI scheme was broader in that it was supposed to embed any URI where a
+	bearer token might be used to create a capability URI. Using dedicated URI schemes to embed
+	HTTP URIs has several desirable properties:</t>
+	<list style="symbol">
+	  <t>
+	    When embedding a URI with query parameters, it avoids the need to escape it, which makes
+	    such URIs easier to transcribe, which is an important design goal of URIs (see <xref
+	    target="RFC3986"/>, section 1.2.2). When the bearer token is a series of words like an
+	    <xref target="xkcd" format="none">XCKD password</xref>, this can make manual
+	    transcription of a bearer-URI both easy and reliable.
+	  </t>
+	  <t>
+	    When using absolute bearer-URIs, the sensitive information is in a part of the URI that
+	    the generic syntax of URIs already treats as sensitive, which makes it more likely that
+	    even software that doesn't recognizes these new URI schemes would handle the sensitive
+	    part accordingly.
+	  </t>
+	  <t>
+	    It avoids the confusion when new URIs are embedded in bearer-URIs. Different
+	    implementations might presume different semantics or implementation details which, for
+	    something that is central to security, can easily lead to serious security issues. Thus,
+	    if another URI scheme can be embedded with a bearer token, a new bearer-URI scheme will
+	    be created with precise semantics.
+	  </t>
+	</list>
     </section>
   </middle>
 
   <back>
     <references title="Normative References">
       <xi:include href="https://bib.ietf.org/public/rfc/bibxml-rfcsubseries/reference.BCP.14.xml"/>
+      <xi:include href="https://bib.ietf.org/public/rfc/bibxml-rfcsubseries/reference.BCP.35.xml"/>
+      <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.5234.xml"/>
+      <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.6455.xml"/>
       <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.6750.xml"/>
+      <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.9110.xml"/>
+      <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.9846.xml"/>
     </references>
 
     <references title="Informative references">
+      <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.3986.xml"/>
+      <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.6071.xml"/>
+      
+      <reference anchor="aclsdont"
+		 target="https://papers.agoric.com/papers/acls-dont/abstract/">
+	<front>
+	  <title>ACLs Don't</title>
+	  <author fullname="Tyler Close"/>
+	</front>
+      </reference>
+
+      <reference anchor="capmyths"
+		 target="https://papers.agoric.com/papers/capability-myths-demolished/abstract/">
+	<front>
+	  <title>Capability Myths Demolished</title>
+	  <author fullname="Mark S. Miller"/>
+	  <author fullname="Ka-Ping Yee"/>
+	  <author fullname="Jonathan Shapiro"/>
+	</front>
+      </reference>
+      
+      <reference anchor="neilmadden"
+		 target="https://neilmadden.blog/2021/03/20/towards-a-standard-for-bearer-token-urls/">
+	<front>
+	  <title>Towards a standard for bearer token URLs</title>
+	  <author fullname="Neil Madden"/>
+	</front>
+      </reference>
+      
+      <reference anchor="ariadneconill"
+		 target="https://ariadne.space/2019/10/10/demystifying-bearer-capability-uris.html">
+	<front>
+	  <title>Demystifying Bearer Capability URIs</title>
+	  <author fullname="Ariadne Conill"/>
+	</front>
+      </reference>
+
+      <reference anchor="xkcd"
+		 target="https://xkcd.com/936/">
+	<front>
+	  <title>Password Strength</title>
+	  <author fullname="Randall Munroe"/>
+	</front>
+      </reference>
+      
     </references>
 
 
