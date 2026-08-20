@@ -19,7 +19,7 @@
      docName="draft-thierry-bearer-uri-00"
      xmlns:xi="http://www.w3.org/2001/XInclude">
   <front>
-    <title>Bearer URIs</title>
+    <title>Capability URIs</title>
 
     <author initials="P." surname="Thierry" fullname="Pierre Thierry">
       <organization>Comonad Dev</organization>
@@ -34,8 +34,7 @@
 
     <abstract>
       <t>
-        This specification describes several URI schemes to embed bearer tokens as authorization
-        within URIs.
+        This specification describes several URI schemes to safely embed capabilities within URIs.
       </t>
     </abstract>
 
@@ -44,25 +43,75 @@
   <middle>
     <section anchor="intro" title="Introduction">
       <section title="Rationale">
-        <t>The research on access control has shown that between the two major paradigms of access
-        control, access control lists (ACLs) are less expressive and usually open the possibility of
-        confused deputy attacks, which include some the most problematic attack surfaces of the Web,
-        like XSS and CSRF (cf. <xref target="aclsdont" format="title"/>). The ambient authority
-        inherent to ACLs is also often critical in enabling privilege escalation, making one
-        security flaw vastly more damaging.</t>
-	<t>The other paradigm, capability-based security, combines designation and permission,
-	making it possible to prevent confused deputy attacks and create new patterns of access
-	control, including composable security policies and safe delegation mechanisms. (cf. <xref
-	target="capmyths" format="title"/>)</t>
-	<t>HTTP/S URIs could be used as capabilities, but as HTTP/S URIs are not treated as
-	sensitive data by most systems, except for their authorization part (but the classical
-	format <tt>login:password</tt> has been deprecated since, cf. <xref target="RFC3986"/>,
-	section 3.2.1), it opens up the possibility that capabilities would get leaked in various
-	problematic places, including being stored in server logs and shown in browser address
-	bars.</t>
-	<t>This specification describes URI schemes that make it possible to safely encode
-	capabilities as URIs by combining an existing URI and a bearer token into a URI, called
-	bearer-URI.</t>
+        <t>
+	  The research on access control has shown that between the two major paradigms of access
+	  control, access control lists (ACLs) are less expressive and usually open the possibility
+	  of confused deputy attacks, which include some the most problematic attack surfaces of the
+	  Web, like XSS and CSRF (cf. <xref target="aclsdont" format="title"/>). The ambient
+	  authority inherent to ACLs is also often critical in enabling privilege escalation, making
+	  one security flaw vastly more damaging.
+	</t>
+	<t>
+	  The other paradigm, capability-based security, combines designation and permission, making
+	  it possible to prevent confused deputy attacks and create new patterns of access control,
+	  including composable security policies and safe delegation mechanisms. (cf. <xref
+	  target="capmyths" format="title"/>)
+	</t>
+	<t>
+	  HTTP/S URIs could be used as capabilities, but as HTTP/S URIs are not treated as sensitive
+	  data by most systems, except for their authorization part (but the classical format
+	  <tt>login:password</tt> has been deprecated since, cf. <xref target="RFC3986"/>, section
+	  3.2.1), it opens up the possibility that capabilities would get leaked in various
+	  problematic places, including being stored in server logs and shown in browser address
+	  bars.
+	</t>
+	<t>	  
+	  This specification describes URI schemes that make it possible to safely encode
+	  capabilities as URIs by combining an existing URI and some authorization data into a URI,
+	  called capability-URI.
+	</t>
+      </section>
+      <section title="Architectural benefits">
+	<t>
+	  These URIs also deliver on the promises of several architectural decisions at the core of
+	  the World Wide Web. <xref target="webarch"/> notes that
+	</t>
+	<blockquote>
+	  It is a strength of Web Architecture that links can be made and shared; a user who has
+	  found an interesting part of the Web can share this experience just by republishing a
+	  URI.
+	</blockquote>
+	<t>
+	  When permissions are separated from designation, sharing a link is often not enough. And
+	  several platforms only let their users share content among themselves. When the only tool
+	  of access control is user identity, it is logical that you can only share with another
+	  user. But fined grained capabilities make it possible again to share "an interesting part
+	  of the Web".
+	</t>
+	<t>
+	  Capability-URIs are also a better fit than identity-based authorization in REST APIs. The
+	  hypermedia nature of REST means that a payload may contain state transitions going to a
+	  variety of different servers and in the context of identity-based authorization, it is
+	  unclear what credentials should be used where and it creates the risk of using some
+	  credentials with the wrong server, possibly leaking credentials to an untrusted
+	  system.
+	</t>
+	<t>
+	  But if a REST server uses capability-URIs in the state transitions, the client knows with
+	  certainy which credentials to use for each request, and each capability-URI can hold the
+	  bare minimum of permissions to trigger just that transition (cf. <xref
+	  target="attenuation" format="title"/>).
+	</t>
+	<t>
+	  Capability-URIS also give the server more control over the trade-off between safety and
+	  latency: when the client should be able to trigger a state transition often and/or over
+	  some period of time, the server can embed a long-lived authorization in that state
+	  transition with only the permissions for that transition. It makes the capability easier
+	  to reuse by a malicious agent, but with a very limited attack surface. On the other hand,
+	  whenever some state transitions require that the client be very strictly verified to be
+	  the right one, capabilities could have a very short TTL and the client would need to renew
+	  them by requesting again the resource where they appeared.
+	</t>
       </section>
       <section title="Conventions and Terminology">
         <t>
@@ -75,20 +124,26 @@
 	<t>This specification uses the Augmented Backus-Naur Form (ABNF) notation of <xref
 	target="RFC5234"/>.</t>
       </section>
+      <section title="Prior work">
+	<t>
+	  The first use of URIs as capabilities was <xref target="webkey">Waterken's webkeys</xref>,
+	  which placed an unguessable token in the fragment.
+	</t>
+      </section>
     </section>
 
     <section title="The bearer schemes" anchor="schemes">
       <section title="Principle of operation">
 	<t>
-	  When a bearer-URI-aware HTTP agent (like a browser or library) is asked to make an HTTP
-	  request to a resource identified by a <tt>bearer-http</tt> URI (with parameters like the
-	  method or the request body), it extracts from that bearer-URI the bearer token and the
-	  HTTP URI, and prepare the HTTP request with the given parameters but put the bearer token
-	  in the <tt>Authorization</tt> header with the <tt>Bearer</tt> authorization scheme: (<xref
-	  target="RFC6750"/>):
+	  When a capability-URI-aware HTTP agent (like a browser or library) is asked to make an
+	  HTTP request to a resource identified by a <tt>cap-http</tt> URI (with parameters like the
+	  method or the request body), it extracts from that capability-URI the authorization data
+	  and the HTTP URI, and prepare the HTTP request with the given parameters but put the
+	  bearer token in the <tt>Authorization</tt> header with the <tt>Bearer</tt> authorization
+	  scheme: (<xref target="RFC6750"/>):
 	</t>
 	<t><figure><artwork>
-http.post("bearer-http://AViRTF9ppWiAtdnpVtVHDQ@example.com/foo", body="bar",
+http.post("cap-http://AViRTF9ppWiAtdnpVtVHDQ@example.com/foo", body="bar",
   headers={"Content-Type": "text/plain"})
 	</artwork></figure></t>
 	<t>would produce the following HTTP request:</t>
@@ -101,7 +156,8 @@ Authorization: Bearer AViRTF9ppWiAtdnpVtVHDQ
 bar
 	</artwork></figure></t>
 	<t>
-	  The URI embedded in an absolute bearer-URI is the same URI with only two transformations:
+	  The URI embedded in an absolute capability-URI is the same URI with only two
+	  transformations:
 	  <list style="symbol">
 	    <t>removal of the authority</t>
 	    <t>replacement of the scheme</t>
@@ -110,18 +166,19 @@ bar
 	<table>
 	  <thead><tr><th>Bearer URI scheme</th><th>Embedded URI scheme</th><th/></tr></thead>
 	  <tbody>
-	    <tr><td><tt>bearer-http</tt></td><td><tt>http</tt> <xref target="RFC9110"/></td><td>(see <xref target="notls"
-	    format="title"/> about the security considerations)</td></tr>
-	    <tr><td><tt>bearer-https</tt></td><td><tt>https</tt> <xref target="RFC9110"/></td><td/></tr>
-	    <tr><td><tt>bearer-ws</tt></td><td><tt>ws</tt> <xref target="RFC6455"/></td><td>(see <xref target="notls"
-	    format="title"/> about the security considerations)</td></tr>
-	    <tr><td><tt>bearer-wss</tt></td><td><tt>wss</tt> <xref target="RFC6455"/></td><td/></tr>
+	    <tr><td><tt>cap-http</tt></td><td><tt>http</tt> <xref target="RFC9110"/></td><td>(see
+	    <xref target="notls" format="title"/> about the security considerations)</td></tr>
+	    <tr><td><tt>cap-https</tt></td><td><tt>https</tt> <xref
+	    target="RFC9110"/></td><td/></tr>
+	    <tr><td><tt>cap-ws</tt></td><td><tt>ws</tt> <xref target="RFC6455"/></td><td>(see <xref
+	    target="notls" format="title"/> about the security considerations)</td></tr>
+	    <tr><td><tt>cap-wss</tt></td><td><tt>wss</tt> <xref target="RFC6455"/></td><td/></tr>
 	  </tbody>
 	</table>
 	<t>
-	  As far as the bearer-URI-aware agent is concerned, the URI of the designated resource MUST
-	  NOT be the embedded HTTP URI, but the bearer-URI (the retrieval URI is one source for a
-	  base URI).
+	  As far as the capability-URI-aware agent is concerned, the URI of the designated resource
+	  MUST NOT be the embedded HTTP URI, but the capability-URI (the retrieval URI is one source
+	  for a base URI).
 	</t>
       </section>
       <section title="Relative URI references">
@@ -133,38 +190,38 @@ bar
 	</t>
 	<t>
 	  For that reason, the bearer schemes include a dedicated syntax to use a relative path with
-	  a different token: <tt>bearer-https:NVW9YpUuEkZ367AyA-3MZw@./bar</tt>. Note that when such
-	  a relative bearer-URI is parsed by a generic URI parser, the whole content after the
+	  a different token: <tt>cap-https:NVW9YpUuEkZ367AyA-3MZw@./bar</tt>. Note that when such a
+	  relative capability-URI is parsed by a generic URI parser, the whole content after the
 	  scheme will match the <tt>path-rootless</tt> rule of <xref target="RFC3986"/> (and the
 	  token won't be parsed by the <tt>authority</tt> rule).
 	</t>
 	<t>
 	  To make a relative reference with an absolute path, a network-path reference can be used:
 	  <tt>//D-nX3h-tDq_VtaYQKYYlDw@/baz</tt>. If there could be ambiguity whether the base URI
-	  is a bearer-URI, it is valid for bearer-URIs to have an empty host, which creates a URI
-	  that is equivalent to a network-path reference, but with the scheme specified:
-	  <tt>bearer-https://D-nX3h-tDq_VtaYQKYYlDw@/baz</tt>.
+	  is a capability-URI, it is valid for capability-URIs to have an empty host, which creates
+	  a URI that is equivalent to a network-path reference, but with the scheme specified:
+	  <tt>cap-https://D-nX3h-tDq_VtaYQKYYlDw@/baz</tt>.
 	</t>
       </section>
       <section title="Definitions">
 	<t>
 	  The four URI schemes are specified by the rules
 	  <list style="symbol">
-	    <t><tt>bearer-http-uri</tt></t>
-	    <t><tt>bearer-https-uri</tt></t>
-	    <t><tt>bearer-ws-uri</tt></t>
-	    <t><tt>bearer-wss-uri</tt></t>
+	    <t><tt>cap-http-uri</tt></t>
+	    <t><tt>cap-https-uri</tt></t>
+	    <t><tt>cap-ws-uri</tt></t>
+	    <t><tt>cap-wss-uri</tt></t>
 	  </list>
 	</t>
 	<t><figure><artwork>
-bearer-http-uri      = "bearer-http" ":" bearer-path [ "?" query ] [ "#" fragment ]
-bearer-https-uri     = "bearer-https" ":" bearer-path [ "?" query ] [ "#" fragment ]
-bearer-ws-uri        = "bearer-ws" ":" bearer-path [ "?" query ]
-bearer-wss-uri       = "bearer-wss" ":" bearer-path [ "?" query ]
-bearer-path          = absolute-bearer-path / relative-bearer-path
-absolute-bearer-path = "//" token "@" host [ ":" port ] path-abempty
+cap-http-uri      = "cap-http" ":" cap-path [ "?" query ] [ "#" fragment ]
+cap-https-uri     = "cap-https" ":" cap-path [ "?" query ] [ "#" fragment ]
+cap-ws-uri        = "cap-ws" ":" cap-path [ "?" query ]
+cap-wss-uri       = "cap-wss" ":" cap-path [ "?" query ]
+cap-path          = absolute-cap-path / relative-cap-path
+absolute-cap-path = "//" token "@" host [ ":" port ] path-abempty
 token                = *( unreserved / pct-encoded / sub-delims )
-relative-bearer-path = token "@" segment-rel "/" path-rootless
+relative-cap-path = token "@" segment-rel "/" path-rootless
 segment-rel          = "." / ".."
 	</artwork></figure></t>
 	<t>The definitions of the following rules are adopted from the generic syntax of URI:</t>
@@ -180,15 +237,15 @@ query         = &lt;query, see [RFC3986], Section 3.4>
 fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 	</artwork></figure></t>
 	<t>
-	  If the <tt>token</tt> component of the bearer-URI is empty, it means that the
+	  If the <tt>token</tt> component of the capability-URI is empty, it means that the
 	  <tt>Authorization</tt> header MUST be absent from the request.
 	</t>
 	<t>
-	  If the <tt>host</tt> component of the bearer-URI is empty, the URI is relative and is
+	  If the <tt>host</tt> component of the capability-URI is empty, the URI is relative and is
 	  valid only if there is a known base URI (cf. <xref target="RFC3986"/>, section
-	  5.1). Resolving the relative bearer-URI consists in creating a target bearer-URI where
-	  every component is taken from the relative bearer-URI except the host, taken from the base
-	  URI.
+	  5.1). Resolving the relative capability-URI consists in creating a target capability-URI
+	  where every component is taken from the relative capability-URI except the host, taken
+	  from the base URI.
 	</t>
       </section>
     </section>
@@ -205,16 +262,18 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 	  describes the use of bearer tokens both with and without TLS.
 	</t>
 	<t>
-	  Of course, <tt>bearer-http</tt> URIs SHOULD never be used over an unprotected
-	  channel. Doing so would make it possible for an observer anywhere on the path between the
-	  client and the server to store and reuse any capability that isn't otherwise limited in
-	  its use.
+	  Of course, <tt>cap-http</tt> URIs SHOULD never be used over an unprotected channel. Doing
+	  so would make it possible for an observer anywhere on the path between the client and the
+	  server to store and reuse any capability that isn't otherwise limited in its use.
 	</t>
       </section>
       <section title="TODO: POLA">
 	<t></t>
       </section>
       <section title="TODO: revocation">
+	<t></t>
+      </section>
+      <section anchor="attenuation" title="TODO: attenuation">
 	<t></t>
       </section>
     </section>
@@ -224,30 +283,30 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 	This specification defines several new URI schemes. Here are the informations for
 	their registration to IANA according to <xref target="BCP35"/>.
       </t>
-      <section title="bearer-http">
+      <section title="cap-http">
 	<list style="hanging">
-	  <t hangText="Scheme name"><tt>bearer-http</tt></t>
+	  <t hangText="Scheme name"><tt>cap-http</tt></t>
 	  <t hangText="Status">Provisional</t>
 	  <t hangText="Applications/protocols that use this scheme name">TBD</t>
 	</list>
       </section>
-      <section title="bearer-https">
+      <section title="cap-https">
 	<list style="hanging">
-	  <t hangText="Scheme name"><tt>bearer-https</tt></t>
+	  <t hangText="Scheme name"><tt>cap-https</tt></t>
 	  <t hangText="Status">Provisional</t>
 	  <t hangText="Applications/protocols that use this scheme name">TBD</t>
 	</list>
       </section>
-      <section title="bearer-ws">
+      <section title="cap-ws">
 	<list style="hanging">
-	  <t hangText="Scheme name"><tt>bearer-ws</tt></t>
+	  <t hangText="Scheme name"><tt>cap-ws</tt></t>
 	  <t hangText="Status">Provisional</t>
 	  <t hangText="Applications/protocols that use this scheme name">TBD</t>
 	</list>
       </section>
-      <section title="bearer-wss">
+      <section title="cap-wss">
 	<list style="hanging">
-	  <t hangText="Scheme name"><tt>bearer-wss</tt></t>
+	  <t hangText="Scheme name"><tt>cap-wss</tt></t>
 	  <t hangText="Status">Provisional</t>
 	  <t hangText="Applications/protocols that use this scheme name">TBD</t>
 	</list>
@@ -256,7 +315,7 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 
     <section title="Acknowledgements">
       <t>
-	The idea of a bearer-URI was independently discovered by several people before this
+	The idea of a capability-URI was independently discovered by several people before this
       specification was imagined and written, and its final form draws a lot of elements from the
       work of Neil Madden (<xref target="neilmadden" format="title"/>), Ariadne Conill (<xref
       target="ariadneconill" format="title"/>) and Christine Lemmber-Webber.
@@ -271,20 +330,20 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 	    such URIs easier to transcribe, which is an important design goal of URIs (see <xref
 	    target="RFC3986"/>, section 1.2.2). When the bearer token is a series of words like an
 	    <xref target="xkcd" format="none">XCKD password</xref>, this can make manual
-	    transcription of a bearer-URI both easy and reliable.
+	    transcription of a capability-URI both easy and reliable.
 	  </t>
 	  <t>
-	    When using absolute bearer-URIs, the sensitive information is in a part of the URI that
-	    the generic syntax of URIs already treats as sensitive, which makes it more likely that
-	    even software that doesn't recognizes these new URI schemes would handle the sensitive
-	    part accordingly.
+	    When using absolute capability-URIs, the sensitive information is in a part of the URI
+	    that the generic syntax of URIs already treats as sensitive, which makes it more likely
+	    that even software that doesn't recognizes these new URI schemes would handle the
+	    sensitive part accordingly.
 	  </t>
 	  <t>
-	    It avoids the confusion when new URIs are embedded in bearer-URIs. Different
+	    It avoids the confusion when new URIs are embedded in capability-URIs. Different
 	    implementations might presume different semantics or implementation details which, for
 	    something that is central to security, can easily lead to serious security issues. Thus,
-	    if another URI scheme can be embedded with a bearer token, a new bearer-URI scheme will
-	    be created with precise semantics.
+	    if another URI scheme can be embedded with a bearer token, a new capability-URI scheme
+	    will be created with precise semantics.
 	  </t>
 	</list>
     </section>
@@ -294,6 +353,7 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
     <references title="Normative References">
       <xi:include href="https://bib.ietf.org/public/rfc/bibxml-rfcsubseries/reference.BCP.14.xml"/>
       <xi:include href="https://bib.ietf.org/public/rfc/bibxml-rfcsubseries/reference.BCP.35.xml"/>
+      <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.3986.xml"/>
       <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.5234.xml"/>
       <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.6455.xml"/>
       <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.6750.xml"/>
@@ -302,7 +362,6 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
     </references>
 
     <references title="Informative references">
-      <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.3986.xml"/>
       <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.6071.xml"/>
       
       <reference anchor="aclsdont"
@@ -344,6 +403,32 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 	<front>
 	  <title>Password Strength</title>
 	  <author fullname="Randall Munroe"/>
+	</front>
+      </reference>
+      
+      <reference anchor="webkey"
+		 target="https://waterken.sourceforge.net/web-key/">
+	<front>
+	  <title>Mashing with permission</title>
+	  <author fullname="Tyler Close"/>
+	</front>
+      </reference>
+      
+      <reference anchor="webarch"
+		 target="https://www.w3.org/TR/webarch/">
+	<front>
+	  <title>Architecture of the World Wide Web, Volume One</title>
+	  <author fullname="Tim Berners-Lee"/>
+	  <author fullname="Tim Bray"/>
+	  <author fullname="Dan Connolly"/>
+	  <author fullname="Paul Cotton"/>
+	  <author fullname="Roy Fielding"/>
+	  <author fullname="Mario Jeckle"/>
+	  <author fullname="Chris Lilley"/>
+	  <author fullname="Noah Mendelsohn"/>
+	  <author fullname="David Orchard"/>
+	  <author fullname="Norman Walsh"/>
+	  <author fullname="Stuart Williams"/>
 	</front>
       </reference>
       
