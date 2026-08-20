@@ -16,7 +16,7 @@
 <rfc ipr="trust200902"
      category="exp"
      submissionType="IETF"
-     docName="draft-thierry-bearer-uri-00"
+     docName="draft-thierry-cap-uris-00"
      xmlns:xi="http://www.w3.org/2001/XInclude">
   <front>
     <title>Capability URIs</title>
@@ -28,7 +28,7 @@
       </address>
     </author>
 
-    <date day="03" month="08" year="2026" />
+    <date day="21" month="08" year="2026" />
     <keyword>capabilities</keyword>
     <keyword>authorization</keyword>
 
@@ -132,18 +132,19 @@
       </section>
     </section>
 
-    <section title="The bearer schemes" anchor="schemes">
+    <section title="The capability schemes" anchor="schemes">
       <section title="Principle of operation">
 	<t>
 	  When a capability-URI-aware HTTP agent (like a browser or library) is asked to make an
 	  HTTP request to a resource identified by a <tt>cap-http</tt> URI (with parameters like the
 	  method or the request body), it extracts from that capability-URI the authorization data
-	  and the HTTP URI, and prepare the HTTP request with the given parameters but put the
-	  bearer token in the <tt>Authorization</tt> header with the <tt>Bearer</tt> authorization
-	  scheme: (<xref target="RFC6750"/>):
+	  and the HTTP URI, and prepare the HTTP request with the given parameters but with the
+	  authorization headers described by the capability-URI. In the following example, it puts
+	  the bearer token in the <tt>Authorization</tt> header with the <tt>Bearer</tt>
+	  authorization schemes (<xref target="RFC6750"/>):
 	</t>
 	<t><figure><artwork>
-http.post("cap-http://AViRTF9ppWiAtdnpVtVHDQ@example.com/foo", body="bar",
+http.post("cap-http://bt=AViRTF9ppWiAtdnpVtVHDQ@example.com/foo", body="bar",
   headers={"Content-Type": "text/plain"})
 	</artwork></figure></t>
 	<t>would produce the following HTTP request:</t>
@@ -164,7 +165,7 @@ bar
 	  </list>
 	</t>
 	<table>
-	  <thead><tr><th>Bearer URI scheme</th><th>Embedded URI scheme</th><th/></tr></thead>
+	  <thead><tr><th>Capability URI scheme</th><th>Embedded URI scheme</th><th/></tr></thead>
 	  <tbody>
 	    <tr><td><tt>cap-http</tt></td><td><tt>http</tt> <xref target="RFC9110"/></td><td>(see
 	    <xref target="notls" format="title"/> about the security considerations)</td></tr>
@@ -185,14 +186,14 @@ bar
 	<t>
 	  The normal algorithm from <xref target="RFC3986"/> (section 5.2) applies to relative
 	  references, which means that except for network-path references with a userinfo component,
-	  relative references reuse the same bearer token used to retrieve the resource
+	  relative references reuse the same authorization data used to retrieve the resource
 	  representation where they appear.
 	</t>
 	<t>
-	  For that reason, the bearer schemes include a dedicated syntax to use a relative path with
-	  a different token: <tt>cap-https:NVW9YpUuEkZ367AyA-3MZw@./bar</tt>. Note that when such a
-	  relative capability-URI is parsed by a generic URI parser, the whole content after the
-	  scheme will match the <tt>path-rootless</tt> rule of <xref target="RFC3986"/> (and the
+	  For that reason, the capability schemes include a dedicated syntax to use a relative path
+	  with a different token: <tt>cap-https:bt=NVW9YpUuEkZ367AyA-3MZw@./bar</tt>. Note that when
+	  such a relative capability-URI is parsed by a generic URI parser, the whole content after
+	  the scheme will match the <tt>path-rootless</tt> rule of <xref target="RFC3986"/> (and the
 	  token won't be parsed by the <tt>authority</tt> rule).
 	</t>
 	<t>
@@ -200,7 +201,7 @@ bar
 	  <tt>//D-nX3h-tDq_VtaYQKYYlDw@/baz</tt>. If there could be ambiguity whether the base URI
 	  is a capability-URI, it is valid for capability-URIs to have an empty host, which creates
 	  a URI that is equivalent to a network-path reference, but with the scheme specified:
-	  <tt>cap-https://D-nX3h-tDq_VtaYQKYYlDw@/baz</tt>.
+	  <tt>cap-https://bt=D-nX3h-tDq_VtaYQKYYlDw@/baz</tt>.
 	</t>
       </section>
       <section title="Definitions">
@@ -219,9 +220,13 @@ cap-https-uri     = "cap-https" ":" cap-path [ "?" query ] [ "#" fragment ]
 cap-ws-uri        = "cap-ws" ":" cap-path [ "?" query ]
 cap-wss-uri       = "cap-wss" ":" cap-path [ "?" query ]
 cap-path          = absolute-cap-path / relative-cap-path
-absolute-cap-path = "//" token "@" host [ ":" port ] path-abempty
-token                = *( unreserved / pct-encoded / sub-delims )
-relative-cap-path = token "@" segment-rel "/" path-rootless
+absolute-cap-path = "//" authorization "@" host [ ":" port ] path-abempty
+authorization     = [ param *( ";" param ) ]
+param             = bearer-param / y-cert-param
+bearer-param      = "bt=" token
+y-cert-param      = "yc=" TODO
+token             = *( unreserved / pct-encoded / sub-delims )
+relative-cap-path = authorization "@" segment-rel "/" path-rootless
 segment-rel          = "." / ".."
 	</artwork></figure></t>
 	<t>The definitions of the following rules are adopted from the generic syntax of URI:</t>
@@ -237,16 +242,38 @@ query         = &lt;query, see [RFC3986], Section 3.4>
 fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 	</artwork></figure></t>
 	<t>
-	  If the <tt>token</tt> component of the capability-URI is empty, it means that the
-	  <tt>Authorization</tt> header MUST be absent from the request.
-	</t>
-	<t>
 	  If the <tt>host</tt> component of the capability-URI is empty, the URI is relative and is
 	  valid only if there is a known base URI (cf. <xref target="RFC3986"/>, section
 	  5.1). Resolving the relative capability-URI consists in creating a target capability-URI
 	  where every component is taken from the relative capability-URI except the host, taken
 	  from the base URI.
 	</t>
+      </section>
+      <section title="Parameters">
+	<t>
+	  The <tt>authorization</tt> component of the capability-URI is made of a sequence of
+	  parameters. This specification defines two such parameters, but a future version can
+	  define more parameters, to support different authorization mechanisms.
+	</t>
+	<section title="Bearer token">
+	  <t>
+	    When the <tt>bearer-param</tt> component is present, the request MUST contain an
+	    <tt>Authorization</tt> header containing the <tt>token</tt> component as a bearer token
+	    used with the <tt>Bearer</tt> authorization scheme (<xref target="RFC6750"/>).
+	  </t>	 
+	  <t>
+	    When the <tt>bearer-param</tt> component is absent, the request MUST NOT contain such an
+	    <tt>Authorization</tt> header with an empty bearer token or one created from another
+	    source than the <tt>bearer-param</tt> component. Another parameter might add an
+	    <tt>Authorization</tt> header, including one using the <tt>Bearer</tt> authorization
+	    scheme.
+	  </t>	 
+	</section>
+	<section title="Y-property certificate">
+	  <t>
+	    TODO
+	  </t>
+	</section>
       </section>
     </section>
 

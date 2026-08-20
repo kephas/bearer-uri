@@ -5,7 +5,7 @@ txt = $(addsuffix .txt, $(names))
 html: $(html) index.html
 txt: $(txt)
 
-index.html: draft-thierry-cap-uri-00.html
+index.html: draft-thierry-cap-uris-00.html
 	ln -s $< $@
 
 %.html: %.xml
