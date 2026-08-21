@@ -294,14 +294,44 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 	  server to store and reuse any capability that isn't otherwise limited in its use.
 	</t>
       </section>
-      <section title="TODO: POLA">
-	<t></t>
+      <section title="POLA">
+	<t>
+	  The Principle of Least Authority says that every part of a system should only get the
+	  least amount of authority needed to operate correctly, and no amount more. While widely
+	  recommended, POLA is rarely put in practice, because in identity-based security
+	  frameworks, POLA sits somewhere between impossible and impractical. But with capabilities,
+	  POLA can become trivial to apply.
+	</t>
+	<t>
+	  The basic design principles to adhere to POLA are the following:
+	  <list style="numbers">
+	    <t>
+	      Every part of the system starts with no authority that can create or observe
+	      side-effects (basically, only read immutable files), except:
+	      <list style="symbols">
+		<t>
+		  the authority needed to be invoked by its callers, which includes receiving data
+		  and capabilities and replying with data and capabilities
+		</t>
+		<t>
+		  its "own" authority, that it exposes (e.g. the permissions to read and write to
+		  some part of a filesystem for a storage service); that authority is doled out to
+		  its callers with the process of <xref format="title" target="attenuation"/>.
+		</t>
+	      </list>
+	    </t>
+	    <t>
+	      Any authority needed to process an invocation by a caller should come from
+	      capabilities contained in the invocation. 
+	    </t>
+	  </list>
+	</t>
       </section>
-      <section title="TODO: revocation">
-	<t></t>
+      <section title="revocation">
+	<t>TODO</t>
       </section>
-      <section anchor="attenuation" title="TODO: attenuation">
-	<t></t>
+      <section anchor="attenuation" title="attenuation">
+	<t>TODO</t>
       </section>
     </section>
 
