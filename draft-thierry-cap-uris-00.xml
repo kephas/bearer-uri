@@ -289,9 +289,17 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 	  describes the use of bearer tokens both with and without TLS.
 	</t>
 	<t>
-	  Of course, <tt>cap-http</tt> URIs SHOULD never be used over an unprotected channel. Doing
-	  so would make it possible for an observer anywhere on the path between the client and the
-	  server to store and reuse any capability that isn't otherwise limited in its use.
+	  Of course, <tt>cap-http</tt> and <tt>cap-ws</tt> URIs SHOULD not, in general, be used over
+	  an unprotected channel. Doing so would make it possible for an observer anywhere on the
+	  path between the client and the server to store and reuse any capability that isn't
+	  otherwise limited in its use.
+	</t>
+	<t>
+	  There are a few scenarios where using capability-URIs on an unprotected channel would be
+	  safe, though. Sending a request to a single-use capability-URI where the server's response
+	  isn't private (and especially doesn't contain other capability-URIs) would give an
+	  observer almost no surface attack (it would reveal one of the server's routes as well as
+	  the shape of some of the tokens used).
 	</t>
       </section>
       <section title="POLA">
