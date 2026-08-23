@@ -221,13 +221,18 @@ cap-ws-uri        = "cap-ws" ":" cap-path [ "?" query ]
 cap-wss-uri       = "cap-wss" ":" cap-path [ "?" query ]
 cap-path          = absolute-cap-path / relative-cap-path
 absolute-cap-path = "//" authorization "@" host [ ":" port ] path-abempty
+relative-cap-path = authorization "@" segment-rel "/" path-rootless
 authorization     = [ param *( ";" param ) ]
 param             = bearer-param / y-cert-param
 bearer-param      = "bt=" token
-y-cert-param      = "yc=" TODO
 token             = *( unreserved / pct-encoded / sub-delims )
-relative-cap-path = authorization "@" segment-rel "/" path-rootless
-segment-rel          = "." / ".."
+y-cert-param      = "yc=" y-cert-alg ":" y-cert-hash
+y-cert-alg        = "sha256"
+y-cert-hash       = base32
+segment-rel       = "." / ".."
+base32            =  "A" / "B" / "C" / "D" / "E" / "F" / "G" / "H" / "I" / "J" / "K" 
+base32            =/ "L" / "M" / "N" / "O" / "P" / "Q" / "R" / "S" / "T" / "U" / "V" 
+base32            =/ "W" / "X" / "Y" / "Z" / "2" / "3" / "4" / "5" / "6" / "7"
 	</artwork></figure></t>
 	<t>The definitions of the following rules are adopted from the generic syntax of URI:</t>
 	<t><figure><artwork>
@@ -271,8 +276,49 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 	</section>
 	<section title="Y-property certificate">
 	  <t>
-	    TODO
+	    This parameter enables the <xref target="y-property" format="none">Y-property</xref>.
 	  </t>
+	  <t>
+	    When the <tt>y-cert-param</tt> component is present, the client MUST check during TLS
+	    handshake that one certificate in the certificate chain of the server, hashed with the
+	    algorithm <tt>y-cert-alg</tt> and encoded in base32 (cf. <xref target="RFC4648"/>,
+	    section 6) corresponds to <tt>y-cert-hash</tt>, or abort the TLS handshake with a
+	    <tt>bad_certificate</tt> alert (cf. <xref target="RFC9846"/>, section 6.2). As the size
+	    of the hash is known, the base32 encoding MUST NOT contain padding.
+	  </t>
+	  <t>
+	    This parameter MUST NOT be present in a <tt>cap-http</tt> or <tt>cap-ws</tt> URI, where
+	    it wouldn't make sense.
+	  </t>
+	  <t>
+	    This specification only defines one value for <tt>y-cert-alg</tt> but a future version
+	    can define more values or deprecate exisiting ones:	    
+	  </t>
+	  <table>
+	    <thead><tr><th><tt>y-cert-alg</tt></th><th>Hashing algorithm</th></tr></thead>
+	    <tbody>
+	      <tr><td><tt>sha256</tt></td><td>SHA-256 (cf. <xref target="RFC6234"/>)</td></tr>
+	    </tbody>
+	  </table>
+	  <t>
+	    This parameter MAY be used without any other, to get the benefits of the Y-property even
+	    in a URI that doesn't combine designation and authority:
+	  </t>
+	  <t><figure><artwork>cap-https://yc=sha256:OHYQO7NTO76XXDLIHAG2M35GQI4KGA5SSEN4W5YLHMVEEZUTZ6CA@example.com/public/doc</artwork></figure></t>
+	  <t>
+	    base32 is used because it is more resilient to transcription, leaving few possible
+	    ambiguities between the characters of the alphabet. To account for the possibility of
+	    erroneous transcription, the following characters not present in base32's alphabet
+	    SHOULD be substituted:
+	  </t>
+	  <table>
+	    <thead><tr><th><tt>invalid characteur</tt></th><th>substitution</th></tr></thead>
+	    <tbody>
+	      <tr><td><tt>0</tt></td><td>O</td></tr>
+	      <tr><td><tt>1</tt></td><td>I</td></tr>
+	      <tr><td><tt>8</tt></td><td>B</td></tr>
+	    </tbody>
+	  </table>
 	</section>
       </section>
     </section>
@@ -292,7 +338,8 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 	  Of course, <tt>cap-http</tt> and <tt>cap-ws</tt> URIs SHOULD not, in general, be used over
 	  an unprotected channel. Doing so would make it possible for an observer anywhere on the
 	  path between the client and the server to store and reuse any capability that isn't
-	  otherwise limited in its use.
+	  otherwise limited in its use (including the capability in the request and any capabilities
+	  in the response).
 	</t>
 	<t>
 	  There are a few scenarios where using capability-URIs on an unprotected channel would be
@@ -340,6 +387,40 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
       </section>
       <section anchor="attenuation" title="attenuation">
 	<t>TODO</t>
+      </section>
+      <section anchor="y-property" title="Y-Property">
+	<t>
+	  If Alice has a capability to Bob and Carol, and Alice sends a message to Bob with the
+	  capability to Carol, the exchange has the Y-property if Alice's message to Bob is
+	  sufficient for Bob to establish a protected channel with Carol.
+	</t>
+	<t>
+	  Simple <tt>https</tt> URIs don't support the Y-property for two reasons:
+	  <list style="symbols">
+	    <t>
+	      Bob also need to know in advance the certificate authority used by the target server.
+	    </t>
+	    <t>
+	      If an attacker can have Bob contact a malicious server with a certificate using a
+	      certificate authority known to Bob, Bob will establish a channel with the attacker,
+	      not Carol.
+	    </t>
+	  </list>
+	</t>
+	<t>
+	  Using the <tt>y-cert-param</tt> component, the client doesn't need to know a shared
+	  certificate authority in advance, and it can verify during TLS handshake that it is
+	  establishing a connection with the intended server.
+	</t>
+	<t>
+	  Even if an attacker manages to alter the DNS records of the name used for the server,
+	  making it possible to have a valid certificate from a widely known certificate authority,
+	  the client would be able to detect that the server is not the one that Alice intended.
+	</t>
+	<t>
+	  This also enables a safe use of self-signed certificates, for more self-sufficient
+	  systems.
+	</t>
       </section>
     </section>
 
@@ -421,7 +502,9 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
       <xi:include href="https://bib.ietf.org/public/rfc/bibxml-rfcsubseries/reference.BCP.14.xml"/>
       <xi:include href="https://bib.ietf.org/public/rfc/bibxml-rfcsubseries/reference.BCP.35.xml"/>
       <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.3986.xml"/>
+      <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.4648.xml"/>
       <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.5234.xml"/>
+      <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.6234.xml"/>
       <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.6455.xml"/>
       <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.6750.xml"/>
       <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.9110.xml"/>
