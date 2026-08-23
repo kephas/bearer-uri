@@ -373,9 +373,10 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
     <section title="Acknowledgements">
       <t>
 	The idea of a capability-URI was independently discovered by several people before this
-      specification was imagined and written, and its final form draws a lot of elements from the
-      work of Neil Madden (<xref target="neilmadden" format="title"/>), Ariadne Conill (<xref
-      target="ariadneconill" format="title"/>) and Christine Lemmber-Webber.
+	specification was imagined and written, and its final form draws a lot of elements from the
+	work of Tyler Close (<xref target="yurl" format="title"/>, <xref target="webkey"
+	format="title"/>), Neil Madden (<xref target="neilmadden" format="title"/>), Ariadne Conill
+	(<xref target="ariadneconill" format="title"/>) and Christine Lemmer-Webber.
       </t>
       <t>
 	The <tt>bearcap</tt> URI scheme was broader in that it was supposed to embed any URI where a
@@ -383,24 +384,25 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 	HTTP URIs has several desirable properties:</t>
 	<list style="symbol">
 	  <t>
-	    When embedding a URI with query parameters, it avoids the need to escape it, which makes
-	    such URIs easier to transcribe, which is an important design goal of URIs (see <xref
-	    target="RFC3986"/>, section 1.2.2). When the bearer token is a series of words like an
-	    <xref target="xkcd" format="none">XCKD password</xref>, this can make manual
-	    transcription of a capability-URI both easy and reliable.
+	    First and foremost, it avoids the confusion when new URIs are embedded in
+	    capability-URIs. Different implementations might presume different semantics or
+	    implementation details which, for something that is central to security, can easily lead
+	    to serious security issues. Thus, if another URI scheme can be embedded as a
+	    capability-URI, a new scheme will be created with precise semantics.
+	  </t>
+	  <t>
+	    When embedding a URI with query parameters and/or a fragment, it avoids the need to
+	    escape them, which makes such URIs easier to transcribe, which is an important design
+	    goal of URIs (see <xref target="RFC3986"/>, section 1.2.2). When the authorization data
+	    is a bearer token that is series of words like an <xref target="xkcd" format="none">XCKD
+	    password</xref>, this can make manual transcription of a capability-URI both easy and
+	    reliable.
 	  </t>
 	  <t>
 	    When using absolute capability-URIs, the sensitive information is in a part of the URI
 	    that the generic syntax of URIs already treats as sensitive, which makes it more likely
 	    that even software that doesn't recognizes these new URI schemes would handle the
 	    sensitive part accordingly.
-	  </t>
-	  <t>
-	    It avoids the confusion when new URIs are embedded in capability-URIs. Different
-	    implementations might presume different semantics or implementation details which, for
-	    something that is central to security, can easily lead to serious security issues. Thus,
-	    if another URI scheme can be embedded with a bearer token, a new capability-URI scheme
-	    will be created with precise semantics.
 	  </t>
 	</list>
     </section>
@@ -460,6 +462,14 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 	<front>
 	  <title>Password Strength</title>
 	  <author fullname="Randall Munroe"/>
+	</front>
+      </reference>
+      
+      <reference anchor="yurl"
+		 target="https://web.archive.org/web/20040221205825/http://www.waterken.com/dev/YURL/httpsy/">
+	<front>
+	  <title>Waterken™ YURL</title>
+	  <author fullname="Tyler Close"/>
 	</front>
       </reference>
       
