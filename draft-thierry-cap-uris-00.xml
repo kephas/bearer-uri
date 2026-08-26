@@ -396,8 +396,47 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 	  </t>
 	</t>
       </section>
-      <section title="revocation">
-	<t>TODO</t>
+      <section title="Revocation">
+	<t>
+	  If a web service just lets you create capabilities and send them out, they would be
+	  irrevocable delegations of your authority. The corresponding issue with ACLs is that you
+	  can't have an ACL about the ACL, or you would need an ACL about the ACL about the ACL, and
+	  so on…
+	</t>
+	<t>
+	  Fortunately, with capabilities, we have several solutions that don't have this issue of
+	  infinite recursion. The simplest is the pattern named the "caretaker". If <tt>Alice</tt>
+	  wants to share with <tt>Bob</tt> a revocable access to <tt>Carol</tt>, <tt>Alice</tt> can
+	  create a proxy object <tt>CarolCaretaker</tt> giving it their capability to
+	  <tt>Carol</tt>. A caretaker has two facets, each with a separate capability: a proxy facet
+	  that just forwards invocation to the capability given to it, and a revocation facet that,
+	  when invoked, removes from its internal data the capability.
+	</t>
+	<t>
+	  The architecture of the caretaker is an interesting illustration of POLA, more
+	  specifically of one of its deeper design principles and one of its benefits. The deeper
+	  design principle is to avoid having code make a policy decision when that decision could
+	  be wrong. Better have the graph of authority support the desired policy by
+	  construction. The caretaker doesn't decide that it should act as a proxy or not. When
+	  revoked, it cannot act as a proxy anymore. The benefit is that a revoked caretaker cannot
+	  be abused, confused or hacked later to exploit the authority initially given to it: it
+	  doesn't hold that authority anymore.
+	</t>
+	<t>
+	  <xref target="weather"/> shows an example of creating, sending, using and revoking a
+	  caretaker.
+	</t>
+	<t>
+	  When the response from requesting a capability-URI may contain further capabilities, a
+	  simple caretaker isn't sufficient to safely revoke authority. With just a caretaker, the
+	  initial capability would stop being proxied, but the user of the caretaker could continue
+	  to use any authority received through the caretaker as capabilities (which would not be
+	  proxied). In such a case, a safer and slightly more complex solution is the membrane
+	  (described in <xref target="robust"/>, figure 9.3, and in <xref target="proxies"/>,
+	  section 5). When a membrane sees a capability-URI in the response, it substitutes it with
+	  a capability-URI to a caretaker. When the membrane is revoked, all the caretakers it
+	  created are revoked as well.
+	</t>
       </section>
       <section anchor="attenuation" title="attenuation">
 	<t>TODO</t>
@@ -536,6 +575,14 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 	</front>
       </reference>
 
+      <reference anchor="robust"
+		 target="https://papers.agoric.com/papers/robust-composition/abstract/">
+	<front>
+	  <title>Robust Composition: Towards a Unified Approach to Access Control and Concurrency Control</title>
+	  <author fullname="Mark S. Miller"/>
+	</front>
+      </reference>
+      
       <reference anchor="capmyths"
 		 target="https://papers.agoric.com/papers/capability-myths-demolished/abstract/">
 	<front>
@@ -543,6 +590,15 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 	  <author fullname="Mark S. Miller"/>
 	  <author fullname="Ka-Ping Yee"/>
 	  <author fullname="Jonathan Shapiro"/>
+	</front>
+      </reference>
+      
+      <reference anchor="proxies"
+		 target="https://dl.acm.org/doi/10.1145/1899661.1869638">
+	<front>
+	  <title>Proxies: design principles for robust object-oriented intercession APIs</title>
+	  <author fullname="Tom Van Cutsem"/>
+	  <author fullname="Mark S. Miller"/>
 	</front>
       </reference>
       
@@ -606,7 +662,75 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
       
     </references>
 
+    <section anchor="bootstrap" title="Bootstrapping a web service with POLA">
+    </section>
 
+    <section anchor="weather" title="Weather service caretaker">
+      <t>
+	Here's an example of creating, sending, using and revoking a caretaker. The APIs seen in
+	this example are hypothetical, not part of this specification. The APIs use a JSON-like data
+	model and the pseudo-code may or may not be valid in some existing programming language, and
+	omits the boilerplate that may be needed to ensure encoding and decoding of native data
+	structures to a format that supports that data model, like JSON or CBOR.
+      </t>
+      <t>
+	Let's say user Alice has three capability-URIs, to Bob's inbox, to a service to create
+	caretakers that she trusts, and to a high-resolution weather service she's paying for:
+	<list style="symbols">
+	  <t><tt>cap-https://bt=ZseIJun3ksCGGpIelt53zg@bob.net/inbox</tt></t>
+	  <t><tt>cap-https://bt=x5bFnods8Dq_pKhfDP-1Dw@alice.io/new-caretaker</tt></t>
+	  <t><tt>cap-https://bt=oKFejFiwgz-JDYbh2OOR7g@high-res-weather.io/report</tt></t>
+	</list>
+      </t>
+      <t>
+	Alice makes the following request to create the caretaker:
+      </t>
+      <t><figure><artwork>
+http.post("cap-https://bt=x5bFnods8Dq_pKhfDP-1Dw@alice.io/new-caretaker",
+         {target: "cap-https://bt=oKFejFiwgz-JDYbh2OOR7g@high-res-weather.io/report"})
+      </artwork></figure></t>
+      <t>
+	The response from the server is:
+      </t>
+      <t><figure><artwork>
+{invoke: "cap-https://bt=i1NLl48cmHZllBHmdA70UQ@alice.io/caretaker",
+ revoke: "cap-https://bt=VgOO0MrxbcAHHLp3_nH_GQ@alice.io/caretaker"}
+      </artwork></figure></t>
+      <t>
+	Then Alice sends both of the received capabilities to Bob's inbox:
+      </t>
+      <t><figure><artwork>
+http.post("cap-https://bt=ZseIJun3ksCGGpIelt53zg@bob.net/inbox",
+          {message: "Here's the high-res weather API, I'll let you use it during your
+                     week at sea. You can revoke your access yourself when you're
+                     back on land."
+           attachments:
+            [{label: "invoke":,
+              type: "cap",
+              content: "cap-https://bt=i1NLl48cmHZllBHmdA70UQ@alice.io/caretaker"},
+             {label: "revoke",
+              type: "cap",
+              content: "cap-https://bt=VgOO0MrxbcAHHLp3_nH_GQ@alice.io/caretaker"}]})
+      </artwork></figure></t>
+      <t>
+	Alice can feel safe that she didn't give Bob any dangerous authority. He can only use the
+	caretaker and render it useless. If Bob forgets to do so, or tries to extend his use of
+	the caretaker, at any point, Alice can use the <tt>revoke</tt> capability so that the
+	caretaker loses its internal capability.
+      </t>
+      <t>
+	The caretaker is simple enough that it makes composition with other tools trivial. For
+	example, Alice could set up a timed worker, e.g. as a cron job, to invoke the
+	<tt>revoke</tt> capability after some time. Again, that worker wouldn't need a complex and
+	possibly dangerous authority to do its job. It wouldn't need the authority to make arbitrary
+	network connections or even arbitrary HTTP requests. In terms of both authority, persistent
+	state and code complexity, it would not need to deal with any multi-step authentication
+	process, and the storage of cookies and temporary tokens. It would only need access to time
+	(and not even that when the worker is a cron job), the ability to make a request for a
+	capability-URI, and the <tt>revoke</tt> capability-URI.
+      </t>
+    </section>
+    
   </back>
 </rfc>
 
