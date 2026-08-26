@@ -377,9 +377,23 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 	    </t>
 	    <t>
 	      Any authority needed to process an invocation by a caller should come from
-	      capabilities contained in the invocation. 
+	      capabilities contained in the invocation.
 	    </t>
 	  </list>
+	  <t>
+	    Mainstream operating systems make it harder to enforce POLA at the process level. By
+	    default, any process can read and write mutable files, listen on network ports and
+	    initiate network connections. Still, sandboxing and containerization tools make it
+	    possible to remove those ambient authorities.
+	  </t>
+	  <t>
+	    But at the web service level, authority often comes from authenticated HTTP requests,
+	    which makes it easier to start a service with no authority, by giving it no credentials
+	    in its configuration. Again, the exception to that rule would be its "own" authority,
+	    like some service exposing a cache that has the credentials to connect to a database in
+	    its configuration. <xref target="bootstrap" format="title"/> shows how this works in
+	    practice in a full scenario starting with the first deployment of a web service.
+	  </t>
 	</t>
       </section>
       <section title="revocation">
