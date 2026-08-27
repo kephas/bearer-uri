@@ -141,7 +141,7 @@
 	  and the HTTP URI, and prepare the HTTP request with the given parameters but with the
 	  authorization headers described by the capability-URI. In the following example, it puts
 	  the bearer token in the <tt>Authorization</tt> header with the <tt>Bearer</tt>
-	  authorization schemes (<xref target="RFC6750"/>):
+	  authorization scheme (<xref target="RFC6750"/>):
 	</t>
 	<t><figure><artwork>
 http.post("cap-http://bt=AViRTF9ppWiAtdnpVtVHDQ@example.com/foo", body="bar",
