@@ -232,7 +232,8 @@ cap-ws-uri        = "cap-ws" ":" cap-path [ "?" query ]
 cap-wss-uri       = "cap-wss" ":" cap-path [ "?" query ]
 cap-path          = absolute-cap-path / relative-cap-path
 absolute-cap-path = "//" authorization "@" host [ ":" port ] path-abempty
-relative-cap-path = authorization "@" segment-rel "/" path-rootless
+relative-cap-path = authorization "@" path-rel
+path-rel          = segment-rel "/" path-rootless
 authorization     = [ param *( ";" param ) ]
 param             = bearer-param / y-cert-param
 bearer-param      = "bt=" token
@@ -258,11 +259,18 @@ query         = &lt;query, see [RFC3986], Section 3.4>
 fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 	</artwork></figure></t>
 	<t>
-	  If the <tt>host</tt> component of the capability-URI is empty, the URI is relative and is
-	  valid only if there is a known base URI (cf. <xref target="RFC3986"/>, section
-	  5.1). Resolving the relative capability-URI consists in creating a target capability-URI
-	  where every component is taken from the relative capability-URI except the host, taken
-	  from the base URI.
+	  If the capability-URI has an <tt>absolute-cap-path</tt> where the <tt>host</tt> component
+	  is empty, the URI is relative and is valid only if there is a known base URI (cf. <xref
+	  target="RFC3986"/>, section 5.1). Resolving this relative capability-URI consists in
+	  creating a target capability-URI where every component is taken from the relative
+	  capability-URI, except the host, taken from the base URI.
+	</t>
+	<t>
+	  If the capability-URI has a <tt>relative-cap-path</tt>, resolving it consists in creating
+	  a target capability-URI where every component is taken from the URI produced by resolving
+	  the relative reference present in the <tt>path-rel</tt> component, except the
+	  <tt>userinfo</tt> component, taken from the <tt>authorization</tt> component of the
+	  relative capability-URI.
 	</t>
       </section>
       <section title="Parameters">
