@@ -126,8 +126,19 @@
       </section>
       <section title="Prior work">
 	<t>
-	  The first use of URIs as capabilities was <xref target="webkey">Waterken's webkeys</xref>,
-	  which placed an unguessable token in the fragment.
+	  The first use of URIs as capabilities was in the Waterken project, with <xref
+	  target="webkey">webkeys</xref>, which placed an unguessable token in the fragment, and
+	  <xref target="yurl">YURLs</xref>, with the <tt>httpy</tt> URI scheme, which introduced the
+	  <xref target="y-property" format="title"/>.
+	</t>
+	<t>
+	  Introducing a new URI scheme proved to be difficult with Web browsers at the time, so the
+	  Waterken project ended up using HTTPS URIs with the fingerprint for the Y-property
+	  embedded in the host.
+	</t>
+	<t>
+	  Recently, several proposals were made about embedding capabilities as URIs with a new URI
+	  scheme (cf. <xref target="ack"/>).
 	</t>
       </section>
     </section>
@@ -512,7 +523,7 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
       </section>
     </section>
 
-    <section title="Acknowledgements">
+    <section anchor="ack" title="Acknowledgements">
       <t>
 	The idea of a capability-URI was independently discovered by several people before this
 	specification was imagined and written, and its final form draws a lot of elements from the
