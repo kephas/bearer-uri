@@ -442,6 +442,12 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 	  doesn't hold that authority anymore.
 	</t>
 	<t>
+	  In the case of the caretaker, this design principle emerges necessarily from POLA: when
+	  the caretaker should stop working, it doesn't need the authority anymore. So it shouldn't
+	  keep it. The trick is to look for other cases where a decision could be transformed into a
+	  dynamic graph of capabilities that embodies the policy behind the decision.
+	</t>
+	<t>
 	  <xref target="weather"/> shows an example of creating, sending, using and revoking a
 	  caretaker.
 	</t>
@@ -451,10 +457,10 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 	  initial capability would stop being proxied, but the user of the caretaker could continue
 	  to use any authority received through the caretaker as capabilities (which would not be
 	  proxied). In such a case, a safer and slightly more complex solution is the membrane
-	  (described in <xref target="robust"/>, figure 9.3, and in <xref target="proxies"/>,
-	  section 5). When a membrane sees a capability-URI in the response, it substitutes it with
-	  a capability-URI to a caretaker. When the membrane is revoked, all the caretakers it
-	  created are revoked as well.
+	  (described in <xref target="robust" format="title"/>, figure 9.3, and in <xref
+	  target="proxies" format="title"/>, section 5). When a membrane sees a capability-URI in
+	  the response, it substitutes it with a capability-URI to a caretaker. When the membrane is
+	  revoked, all the caretakers it created are revoked as well.
 	</t>
       </section>
       <section anchor="attenuation" title="attenuation">
