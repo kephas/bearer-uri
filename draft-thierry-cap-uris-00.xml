@@ -226,25 +226,27 @@ bar
 	  </list>
 	</t>
 	<t><figure><artwork>
-cap-http-uri      = "cap-http" ":" cap-path [ "?" query ] [ "#" fragment ]
-cap-https-uri     = "cap-https" ":" cap-path [ "?" query ] [ "#" fragment ]
-cap-ws-uri        = "cap-ws" ":" cap-path [ "?" query ]
-cap-wss-uri       = "cap-wss" ":" cap-path [ "?" query ]
-cap-path          = absolute-cap-path / relative-cap-path
-absolute-cap-path = "//" authorization "@" host [ ":" port ] path-abempty
-relative-cap-path = authorization "@" path-rel
-path-rel          = segment-rel "/" path-rootless
-authorization     = [ param *( ";" param ) ]
-param             = bearer-param / y-cert-param
-bearer-param      = "bt=" token
-token             = *( unreserved / pct-encoded / sub-delims )
-y-cert-param      = "yc=" y-cert-alg ":" y-cert-hash
-y-cert-alg        = "sha256"
-y-cert-hash       = base32
-segment-rel       = "." / ".."
-base32            =  "A" / "B" / "C" / "D" / "E" / "F" / "G" / "H" / "I" / "J" / "K" 
-base32            =/ "L" / "M" / "N" / "O" / "P" / "Q" / "R" / "S" / "T" / "U" / "V" 
-base32            =/ "W" / "X" / "Y" / "Z" / "2" / "3" / "4" / "5" / "6" / "7"
+cap-http-uri       = "cap-http" ":" cap-path [ "?" query ] [ "#" fragment ]
+cap-https-uri      = "cap-https" ":" cap-path [ "?" query ] [ "#" fragment ]
+cap-ws-uri         = "cap-ws" ":" cap-path [ "?" query ]
+cap-wss-uri        = "cap-wss" ":" cap-path [ "?" query ]
+cap-path           = absolute-cap-path / relative-cap-path
+absolute-cap-path  = "//" authorization "@" host [ ":" port ] path-abempty
+relative-cap-path  = authorization "@" path-rel
+path-rel           = segment-rel "/" path-rootless
+authorization      = [ param *( ";" param ) ]
+param              = bearer-token-param / token-format-param / y-cert-param
+bearer-token-param = "bt=" token
+token              = *( unreserved / pct-encoded / sub-delims )
+token-format-param = "tf=" token-format
+token-format       = "bisc"
+y-cert-param       = "yc=" y-cert-alg ":" y-cert-hash
+y-cert-alg         = "sha256"
+y-cert-hash        = base32
+segment-rel        = "." / ".."
+base32             =  "A" / "B" / "C" / "D" / "E" / "F" / "G" / "H" / "I" / "J" / "K" 
+base32             =/ "L" / "M" / "N" / "O" / "P" / "Q" / "R" / "S" / "T" / "U" / "V" 
+base32             =/ "W" / "X" / "Y" / "Z" / "2" / "3" / "4" / "5" / "6" / "7"
 	</artwork></figure></t>
 	<t>The definitions of the following rules are adopted from the generic syntax of URI:</t>
 	<t><figure><artwork>
@@ -281,17 +283,33 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 	</t>
 	<section title="Bearer token">
 	  <t>
-	    When the <tt>bearer-param</tt> component is present, the request MUST contain an
+	    When the <tt>bearer-token-param</tt> component is present, the request MUST contain an
 	    <tt>Authorization</tt> header containing the <tt>token</tt> component as a bearer token
 	    used with the <tt>Bearer</tt> authorization scheme (<xref target="RFC6750"/>).
 	  </t>	 
 	  <t>
-	    When the <tt>bearer-param</tt> component is absent, the request MUST NOT contain such an
-	    <tt>Authorization</tt> header with an empty bearer token or one created from another
-	    source than the <tt>bearer-param</tt> component. Another parameter might add an
-	    <tt>Authorization</tt> header, including one using the <tt>Bearer</tt> authorization
+	    When the <tt>bearer-token-param</tt> component is absent, the request MUST NOT contain
+	    such an <tt>Authorization</tt> header with an empty bearer token or one created from
+	    another source than the <tt>bearer-token-param</tt> component. Another parameter MAY add
+	    an <tt>Authorization</tt> header, including one using the <tt>Bearer</tt> authorization
 	    scheme.
 	  </t>	 
+	</section>
+	<section anchor="token-format" title="Token format">
+	  <t>
+	    When the <tt>token-format-param</tt> component is present, it gives the format used for
+	    the bearer token.
+	  </t>
+	  <t>
+	    This specification only defines one value for <tt>token-format</tt> but a future version
+	    can define more values or deprecate exisiting ones:
+	  </t>
+	  <table>
+	    <thead><tr><th><tt>token-format</tt></th><th>Token format</th></tr></thead>
+	    <tbody>
+	      <tr><td><tt>bisc</tt></td><td>Biscut (cf. <xref target="biscuit"/>)</td></tr>
+	    </tbody>
+	  </table>
 	</section>
 	<section title="Y-property certificate">
 	  <t>
@@ -454,7 +472,7 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 		<t>
 		  its "own" authority, that it exposes (e.g. the permissions to read and write to
 		  some part of a filesystem for a storage service); that authority is doled out to
-		  its callers with the process of <xref format="title" target="attenuation"/>.
+		  its callers with the process of <xref target="attenuation">attenuation</xref>.
 		</t>
 	      </list>
 	    </t>
@@ -479,7 +497,7 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 	  </t>
 	</t>
       </section>
-      <section title="Revocation">
+      <section anchor="revocation" title="Revocation">
 	<t>
 	  If a web service just lets you create capabilities and send them out, they would be
 	  irrevocable delegations of your authority. The corresponding issue with ACLs is that you
@@ -527,8 +545,141 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 	  revoked, all the caretakers it created are revoked as well.
 	</t>
       </section>
-      <section anchor="attenuation" title="attenuation">
-	<t>TODO</t>
+      <section anchor="attenuation" title="Attenuation">
+	<t>
+	  Capability attenuation is a process that takes a capability as input and produces a new
+	  capabiliy as output, whose authority is a subset of the input capability's authority.
+	</t>
+	<t>
+	  The use of attenuation is another design principle that emerges necessarily from
+	  POLA. Most agents start with one or several capabilities with a broad authority. When they
+	  delegate authority to other agents or services to act on their behalf, it almost always
+	  needs to be vastly narrower, so attenuated capabilities are used.
+	</t>
+	<t>
+	  For example, let's say Alice has a capability with read/write authority to her whole
+	  online file storage, and a capability to a photo annotation service. She obviously doesn't
+	  want that service to be able to read her private files, about her finances, her health, or
+	  her diaries. She doesn't want to lose her valuable photo collection to a bug in the
+	  service or a data ransom attack, so she doesn't trust the service with read/write access
+	  to the photos.
+	</t>
+	<t>
+	  Alice would then create two attenuated capabilities to her file storage, one with
+	  read-only authority over <tt>/Photos/Family</tt>, where the subset or her photo collection
+	  is that she wants annotated, and one with read/write authority over
+	  <tt>/Photos/Famly_annotations</tt>, an empty folder where the service can write the
+	  metadata it produces.
+	</t>
+	<section title="Attenuation by default">
+	  <t>
+	    When a service exposes authority through capability-URIs, like a file storage or a
+	    business dashboard, it SHOULD by default expose each element through an attenuated
+	    capability. For example, using bearer tokens, requesting a directory listing from a file
+	    storage SHOULD result in a list with each file in the directory with a corresponding
+	    capability-URI whose token can only be used to access that file. If that file is itself
+	    a directory, listing its contents SHOULD also work the same way. When accessed with
+	    read-write authority, such a storage service MAY either include two capabilities for
+	    each file in a listing, one for read/write authority, the other for read-only authority,
+	    or MAY provide a way to get a read-only version of any read/write capability. Of course,
+	    in almost all cases, listing a directory through a capability-URI with read-only
+	    authority SHOULD only produce other capabilities with read-only authority (there are
+	    very few exceptions that would make sense with respect to security).
+	  </t>
+	  <t>
+	    This way of getting attenuated capabilities has the benefit that it usually matches the
+	    users' intention and intuition. Even if I navigate through my business dashboard and
+	    share with someone the direct, irrevocable capability-URI to something, it would not be
+	    different than if, in a physical office, I gave someone the key to a storage room,
+	    telling them to do some task in there, like shredding all files older than 10 years.
+	  </t>
+	  <t>
+	    Of course, most services that expose such a graph of attenuated capability-URIs SHOULD
+	    include features to wrap them in a membrane to enable <xref
+	    target="revocation">revocation</xref>.
+	  </t>
+	</section>
+	<section title="Attenuation by intermediary">
+	  <t>
+	    A service may provide access abstractions (like the caretaker) that aren't expressive
+	    enough to implement your desired policies. For example, a file storage service may
+	    provide a tree of attenuated read/write and read-only capabilities, and the ability to
+	    wrap any of them in a membrane, but this is not expressive enough to implement the
+	    following policies:
+	  </t>
+	  <list style="symbols">
+	    <t>
+	      The authority to read a specific file, only once
+	    </t>
+	    <t>
+	      The authority to append to a specific file, but not to read or modify the existing
+	      contents
+	    </t>
+	    <t>
+	      The authority to create a new writable file, but not to read of modify any existing
+	      file in the same directory
+	    </t>
+	    <t>
+	      The authority to walk only once through a tree of directories, read only one file,
+	      only once
+	    </t>
+	  </list>
+	  <t>
+	    One solution is to expose another service, that provides the missing access
+	    abstrations. In some cases, like the single-use restriction, such a service can be
+	    trivially composed with others without knowledge about their API. Such a wrapper needs
+	    only to know the target capability-URI and will, only once, forward any request and
+	    forward the response back.
+	  </t>
+	  <t>
+	    Many variants of the single-use wrapper can be designed, including the simplest which
+	    forwards the response untouched, one that enforces a truly single-use authority by
+	    stripping all capability-URIs from the response, or one where the single-use restriction
+	    only applies to the initial capability, but all capabilities in the initial response get
+	    wrapped in a membrane for future revocation (but see <xref target="confinement">the
+	    limits on confinement</xref> for they are limits on those last two). One of the common
+	    use cases for capabilty-URIs that are single-use while giving access to less restricted
+	    capability-URIs is when the single-use capability-URI is sent through an unprotected
+	    channel (like email), or to ensure forward secrecy.
+	  </t>
+	  <t>
+	    In contrast, the three other policies in the example above would need knowledge of the
+	    storage API to be able to implement the access abstraction.
+	  </t>
+	  <t>
+	    A service providing access abstractions is a way to expose capability-URIs that give
+	    access to a legacy service that isn't capability-based itself.
+	  </t>
+	</section>
+	<section anchor="offatt" title="Offline attenation">
+	  <t>
+	    Several capability systems use a cryptographical chain of certificates as a capability,
+	    designed in such a way that when an agent has a chain <tt>[C0,C1,C2]</tt>, it cannot
+	    extract the chain <tt>[C0,C1]</tt> and use it. Either it can extract it and cannot use
+	    it (e.g. because <tt>C1</tt> designates a public key whose private key is needed to use
+	    the capability, which is the case with <xref target="zcap" format="none">zcaps</xref>
+	    and <xref target="ucan" format="none">UCANs</xref>), or it cannot extract it
+	    (e.g. because the chains actually look like <tt>[C0,C1,U1]</tt> and
+	    <tt>[C0,C1,C2,U2]</tt> and so the agent receiving the second capability misses
+	    <tt>U1</tt> to reconstruct the full parent capability, which is the case with <xref
+	    target="biscuit" format="none">biscuits</xref>).
+	  </t>
+	  <t>
+	    When such a system is used to create capability-URIs, then an agent holding a
+	    capability-URI can create attenuated capability-URIs without contacting any web
+	    service. To advertise this possibility, capability-URIs can use the <xref
+	    target="token-format"><tt>tf</tt> parameter</xref>.
+	  </t>
+	  <t>
+	    Offline attenuation has several benefits. It makes it possible to use some new access
+	    abstractions with limited or no change in the web service's code. It means that the web
+	    service doesn't need to store capabilities itself, and the proliferation of attenuated
+	    capabilities doesn't create a burden on the web service. It also removes the web service
+	    as a point of failure: when the holder of a capability is offline or even when the web
+	    service itself is unavailable, capabilities can still be attenuated and communicated
+	    between agents for later use with the web service. The cost is the size of the tokens.
+	  </t>
+	</section>
       </section>
       <section anchor="y-property" title="Y-Property">
 	<t>
@@ -754,6 +905,37 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 	<front>
 	  <title>Architectural Styles and the Design of Network-based Software Architectures</title>
 	  <author fullname="Roy Fielding"/>
+	</front>
+      </reference>
+
+      <reference anchor="biscuit"
+		 target="https://www.biscuitsec.org/">
+	<front>
+	  <title>Eclipse Biscuit</title>
+	  <author fullname="Geoffroy Couprie"/>
+	  <author fullname="Clément Delafargue"/>
+	  <author fullname="Cédric Corbière"/>
+	</front>
+      </reference>
+
+      <reference anchor="zcap"
+		 target="https://w3c-ccg.github.io/zcap-spec/">
+	<front>
+	  <title>Authorization Capabilities for Linked Data</title>
+	  <author fullname="Christine Lemmer-Webber"/>
+	  <author fullname="Manu Sporny"/>
+	  <author fullname="Mark S. Miller"/>
+	</front>
+      </reference>
+
+      <reference anchor="ucan"
+		 target="https://github.com/ucan-wg/spec/">
+	<front>
+	  <title>User Controlled Authorization Network (UCAN) Specification</title>
+	  <author fullname="Irakli Gozalishvili"/>
+	  <author fullname="Daniel Holmgren"/>
+	  <author fullname="Philipp Krüger"/>
+	  <author fullname="Brooklyn Zelenka"/>
 	</front>
       </reference>
 
