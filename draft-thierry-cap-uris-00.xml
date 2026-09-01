@@ -89,12 +89,12 @@
 	  of the Web".
 	</t>
 	<t>
-	  Capability-URIs are also a better fit than identity-based authorization in REST APIs. The
-	  hypermedia nature of REST means that a payload may contain state transitions going to a
-	  variety of different servers and in the context of identity-based authorization, it is
-	  unclear what credentials should be used where and it creates the risk of using some
-	  credentials with the wrong server, possibly leaking credentials to an untrusted
-	  system.
+	  Capability-URIs are also a better fit than identity-based authorization in REST APIs
+	  (cf. <xref target="rest" format="title"/>, especially chapter 5). The hypermedia nature of
+	  REST means that a payload may contain state transitions going to a variety of different
+	  servers and in the context of identity-based authorization, it is unclear what credentials
+	  should be used where and it creates the risk of using some credentials with the wrong
+	  server, possibly leaking credentials to an untrusted system.
 	</t>
 	<t>
 	  But if a REST server uses capability-URIs in the state transitions, the client knows with
@@ -367,6 +367,70 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 	  observer almost no surface attack (it would reveal one of the server's routes as well as
 	  the shape of some of the tokens used).
 	</t>
+      </section>
+      <section title="Capabilities must be unforgeable">
+	<t>
+	  For capabilities to enforce their security model, an attacker must not be able to create a
+	  capability not explicitly given to them.
+	</t>
+	<t>
+	  In an Object-Capability system (as first formalized in <xref target="robust"
+	  format="title"/>), capabilities cannot be created from arbitrary data, they are not a
+	  secret sequence of bits. But capability-URIs are just secret sequences of characters, so
+	  their safety resides in being unguessable by an attacker.
+	</t>
+	<t>
+	  While this specification doesn't impose any constraint on the nature of the bearer tokens
+	  used (beyond being encoded to only use the available characters for their part of the
+	  URI), any application creating capability-URIs MUST apply the currently known techniques
+	  to generate tokens that are sufficiently difficult to guess, according to the threat model
+	  considered.
+	</t>
+	<t>
+	  Among the known techniques typically used to make tokens unguessable, they can be:
+	</t>
+	<list style="symbols">
+	  <t>
+	    A number generated within a wide enough range by a cryptographically secure PRNG
+	    (usually encoded in base32 or base64, or as a series of human words).
+	  </t>
+	  <t>
+	    The permissions as data, protected with cryptography: encrypted such that only the
+	    destination service can encrypt and decrypt it, and/or signed. <xref target="biscuit"
+	    format="none">Biscuit</xref> is a recent example of the latter, and it is capable of
+	    <xref target="offatt">offline attenuation</xref>.
+	  </t>
+	</list>
+	<section anchor="confinement" title="The limits on confinement">
+	  <t>
+	    Because capability-URIs are secret sequences of characters, they can be transformed and
+	    sliced in such ways that their nature cannot be recognized reliably. For that reason,
+	    most access abstractions that limit the transmission of capability-URIs can be defeated
+	    if an agent on one side of the abstraction is cooperating with an agent on the other
+	    side in order to leak authority.
+	  </t>
+	  <t>
+	    The ability to guarantee that an agent doesn't have authority to observe or create side
+	    effects is called confinement. It is possible within an Object-Capability system even
+	    between mutually untrusting agents, but not with capability-URIs.
+	  </t>
+	  <t>
+	    For example, even if agent Mallet is running inside a membrane, agent Ned has a
+	    capability-URI to Mallet wrapped by the membrane, and there is no other channel between
+	    them, when Ned invokes the capability-URI, agent Mallet can respond with an encrypted
+	    capability-URI and the secret key needed to decrypt it. No membrane can expect to detect
+	    every way that this scenario could play out and trying to detect many of them might be
+	    too expensive in terms of computation and latency.
+	  </t>
+	  <t>
+	    Still, to protect services that always give authority through full capability-URIs, a
+	    membrane remains a reliable tool to provide safety and flexibility. Such services SHOULD
+	    only use capability-URIs with their scheme, and SHOULD NOT rely on relative references,
+	    except when the media type is unambiguous about which part of the response should be
+	    resolved as a URI. This implies following <xref target="rest" format="none">REST</xref>,
+	    instead of having clients construct URIs from out-of-band logic and pieces of data.
+	  </t>
+	</section>
       </section>
       <section title="POLA">
 	<t>
@@ -684,7 +748,15 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 	  <author fullname="Stuart Williams"/>
 	</front>
       </reference>
-      
+
+      <reference anchor="rest"
+		 target="https://roy.gbiv.com/pubs/dissertation/top.htm">
+	<front>
+	  <title>Architectural Styles and the Design of Network-based Software Architectures</title>
+	  <author fullname="Roy Fielding"/>
+	</front>
+      </reference>
+
     </references>
 
     <section anchor="bootstrap" title="Bootstrapping a web service with POLA">
