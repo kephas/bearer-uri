@@ -942,6 +942,70 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
     </references>
 
     <section anchor="bootstrap" title="Bootstrapping a web service with POLA">
+      <t>
+	When a service exposes authority, it might be counter-intuitive that every invocation of the
+	service should still provide the authority needed for the service to respond. This example
+	shows how this could work with a file storage service.
+      </t>
+      <t>
+	The service is first deployed with only permissions to:
+	<list style="symbols">
+	  <t>
+	    read its configuration file, which contains one root capability that has read/write
+	    authority on the service's storage
+	  </t>
+	  <t>
+	    read and write to one folder, <tt>/srv/storage</tt>
+	  </t>
+	  <t>
+	    listen to incoming HTTP requests
+	  </t>
+	</list>
+      </t>
+      <t>
+	The service's administrator will use the root capability to create folders, named according
+	to usernames allocated to users. Creating a folder <tt>alice</tt> with the root capability
+	would have the service create a folder <tt>/srv/storage/alice</tt>. This means that the
+	administrator doesn't need special tools to create folders that are private to users. Its
+	power doesn't come from special operations, only from where the root capability gives
+	authority to read and write.
+      </t>
+      <t>
+	The user Alice would receive the capability-URI to use her own storage space, unaware if,
+	under the hood, her files are in <tt>/srv/storage/alice</tt>, <tt>/srv/storage/user1</tt> or
+	any other path. Through her capability-URI, no parent directory and no full path is
+	visible. When she in turn wants to create a folder <tt>projects</tt>, and later a folder
+	<tt>projects/report</tt>, she would not use a path like <tt>alice/projects/report</tt>. She
+	would use her initial capability to create a folder <tt>projects</tt>. This would in turn
+	give her a capability to that folder, and she would use that capability to create a folder
+	<tt>report</tt>.
+      </t>
+      <t>
+	This means that the storage service doesn't need to decide if a user has the right to access
+	something. It is inherent to the capability that they can. In its internal database, the
+	service maintains a mapping between capabilities, operations and paths. If it finds a path
+	associated with the capability and the operation, it operates in that path. Using
+	capabilities to interact with the service although it obviously has the authority to act on
+	the underlying storage is what makes the whole thing actually secure: the service cannot be
+	confused to use its own authority to do operations that the user isn't authorized to do. And
+	an attacker cannot construct a request to have a user with more authorization send it to the
+	service.
+      </t>
+      <t>
+	This also means that the root capability isn't special. It will just be associated on
+	startup with the root of the space. This means that full administrative rights can be
+	delegated in folders just by giving a read/write capability-URI for that folder. A user
+	without access to the configuration file, given a capability-URI and instructed to be the
+	administrator, wouldn't know if they are administering the full storage space or a subspace.
+      </t>
+      <t>
+	If it is desirable that some administrators cannot access the users' private folders, one
+	additional attenuation available from a folder with read/write access would be to make it so
+	the only operation is to create new folders in it but the resulting read/write
+	capability-URI is sent to an inbox given as a parameter, verifiable through the storage
+	service for the recipient. The service could even be configured so that the root capability
+	is that kind of capability, and no level of administrator can read everyone's files.
+      </t>
     </section>
 
     <section anchor="weather" title="Weather service caretaker">
