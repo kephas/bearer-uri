@@ -47,20 +47,20 @@
 	  The research on access control has shown that between the two major paradigms of access
 	  control, access control lists (ACLs) are less expressive and usually open the possibility
 	  of confused deputy attacks, which include some the most problematic attack surfaces of the
-	  Web, like XSS and CSRF (cf. <xref target="aclsdont" format="title"/>). The ambient
+	  Web, like XSS and CSRF (see <xref target="aclsdont" format="title"/>). The ambient
 	  authority inherent to ACLs is also often critical in enabling privilege escalation, making
 	  one security flaw vastly more damaging.
 	</t>
 	<t>
 	  The other paradigm, capability-based security, combines designation and permission, making
 	  it possible to prevent confused deputy attacks and create new patterns of access control,
-	  including composable security policies and safe delegation mechanisms. (cf. <xref
+	  including composable security policies and safe delegation mechanisms. (see <xref
 	  target="capmyths" format="title"/>)
 	</t>
 	<t>
 	  HTTP/S URIs could be used as capabilities, but as HTTP/S URIs are not treated as sensitive
 	  data by most systems, except for their authorization part (but the classical format
-	  <tt>login:password</tt> has been deprecated since, cf. <xref target="RFC3986"/>, section
+	  <tt>login:password</tt> has been deprecated since, see <xref target="RFC3986"/>, section
 	  3.2.1), it opens up the possibility that capabilities would get leaked in various
 	  problematic places, including being stored in server logs and shown in browser address
 	  bars.
@@ -90,7 +90,7 @@
 	</t>
 	<t>
 	  Capability-URIs are also a better fit than identity-based authorization in REST APIs
-	  (cf. <xref target="rest" format="title"/>, especially chapter 5). The hypermedia nature of
+	  (see <xref target="rest" format="title"/>, especially chapter 5). The hypermedia nature of
 	  REST means that a payload may contain state transitions going to a variety of different
 	  servers and in the context of identity-based authorization, it is unclear what credentials
 	  should be used where and it creates the risk of using some credentials with the wrong
@@ -99,8 +99,8 @@
 	<t>
 	  But if a REST server uses capability-URIs in the state transitions, the client knows with
 	  certainy which credentials to use for each request, and each capability-URI can hold the
-	  bare minimum of permissions to trigger just that transition (cf. <xref
-	  target="attenuation" format="title"/>).
+	  bare minimum of permissions to trigger just that transition (see <xref
+	  target="attenuation">Attenuation</xref>).
 	</t>
 	<t>
 	  Capability-URIS also give the server more control over the trade-off between safety and
@@ -127,18 +127,18 @@
       <section title="Prior work">
 	<t>
 	  The first use of URIs as capabilities was in the Waterken project, with <xref
-	  target="webkey">webkeys</xref>, which placed an unguessable token in the fragment, and
+	  target="web-key">web-keys</xref>, which placed an unguessable token in the fragment, and
 	  <xref target="yurl">YURLs</xref>, with the <tt>httpy</tt> URI scheme, which introduced the
-	  <xref target="y-property" format="title"/>.
+	  <xref target="y-property">Y-property</xref>.
 	</t>
 	<t>
 	  Introducing a new URI scheme proved to be difficult with Web browsers at the time, so the
-	  Waterken project ended up using HTTPS URIs with the fingerprint for the Y-property
-	  embedded in the host.
+	  Waterken project ended up using <tt>https</tt> URIs with the fingerprint for the
+	  Y-property embedded in the host.
 	</t>
 	<t>
 	  Recently, several proposals were made about embedding capabilities as URIs with a new URI
-	  scheme (cf. <xref target="ack"/>).
+	  scheme (see <xref target="ack">acknoledgements</xref>).
 	</t>
       </section>
     </section>
@@ -262,7 +262,7 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 	</artwork></figure></t>
 	<t>
 	  If the capability-URI has an <tt>absolute-cap-path</tt> where the <tt>host</tt> component
-	  is empty, the URI is relative and is valid only if there is a known base URI (cf. <xref
+	  is empty, the URI is relative and is valid only if there is a known base URI (see <xref
 	  target="RFC3986"/>, section 5.1). Resolving this relative capability-URI consists in
 	  creating a target capability-URI where every component is taken from the relative
 	  capability-URI, except the host, taken from the base URI.
@@ -307,7 +307,7 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 	  <table>
 	    <thead><tr><th><tt>token-format</tt></th><th>Token format</th></tr></thead>
 	    <tbody>
-	      <tr><td><tt>bisc</tt></td><td>Biscut (cf. <xref target="biscuit"/>)</td></tr>
+	      <tr><td><tt>bisc</tt></td><td>Biscut (see <xref target="biscuit"/>)</td></tr>
 	    </tbody>
 	  </table>
 	</section>
@@ -318,9 +318,9 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 	  <t>
 	    When the <tt>y-cert-param</tt> component is present, the client MUST check during TLS
 	    handshake that one certificate in the certificate chain of the server, hashed with the
-	    algorithm <tt>y-cert-alg</tt> and encoded in base32 (cf. <xref target="RFC4648"/>,
+	    algorithm <tt>y-cert-alg</tt> and encoded in base32 (see <xref target="RFC4648"/>,
 	    section 6) corresponds to <tt>y-cert-hash</tt>, or abort the TLS handshake with a
-	    <tt>bad_certificate</tt> alert (cf. <xref target="RFC9846"/>, section 6.2). As the size
+	    <tt>bad_certificate</tt> alert (see <xref target="RFC9846"/>, section 6.2). As the size
 	    of the hash is known, the base32 encoding MUST NOT contain padding.
 	  </t>
 	  <t>
@@ -334,7 +334,7 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 	  <table>
 	    <thead><tr><th><tt>y-cert-alg</tt></th><th>Hashing algorithm</th></tr></thead>
 	    <tbody>
-	      <tr><td><tt>sha256</tt></td><td>SHA-256 (cf. <xref target="RFC6234"/>)</td></tr>
+	      <tr><td><tt>sha256</tt></td><td>SHA-256 (see <xref target="RFC6234"/>)</td></tr>
 	    </tbody>
 	  </table>
 	  <t>
@@ -372,7 +372,7 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 	  describes the use of bearer tokens both with and without TLS.
 	</t>
 	<t>
-	  Of course, <tt>cap-http</tt> and <tt>cap-ws</tt> URIs SHOULD not, in general, be used over
+	  Of course, <tt>cap-http</tt> and <tt>cap-ws</tt> URIs SHOULD NOT, in general, be used over
 	  an unprotected channel. Doing so would make it possible for an observer anywhere on the
 	  path between the client and the server to store and reuse any capability that isn't
 	  otherwise limited in its use (including the capability in the request and any capabilities
@@ -456,7 +456,7 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 	  least amount of authority needed to operate correctly, and no amount more. While widely
 	  recommended, POLA is rarely put in practice, because in identity-based security
 	  frameworks, POLA sits somewhere between impossible and impractical. But with capabilities,
-	  POLA can become trivial to apply.
+	  POLA can become trivial to follow.
 	</t>
 	<t>
 	  The basic design principles to adhere to POLA are the following:
@@ -756,7 +756,7 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
       <t>
 	The idea of a capability-URI was independently discovered by several people before this
 	specification was imagined and written, and its final form draws a lot of elements from the
-	work of Tyler Close (<xref target="yurl" format="title"/>, <xref target="webkey"
+	work of Tyler Close (<xref target="yurl" format="title"/>, <xref target="web-key"
 	format="title"/>), Neil Madden (<xref target="neilmadden" format="title"/>), Ariadne Conill
 	(<xref target="ariadneconill" format="title"/>) and Christine Lemmer-Webber.
       </t>
@@ -818,7 +818,8 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
       <reference anchor="robust"
 		 target="https://papers.agoric.com/papers/robust-composition/abstract/">
 	<front>
-	  <title>Robust Composition: Towards a Unified Approach to Access Control and Concurrency Control</title>
+	  <title>Robust Composition: Towards a Unified Approach to Access Control and Concurrency
+	  Control</title>
 	  <author fullname="Mark S. Miller"/>
 	</front>
       </reference>
@@ -874,7 +875,7 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 	</front>
       </reference>
       
-      <reference anchor="webkey"
+      <reference anchor="web-key"
 		 target="https://waterken.sourceforge.net/web-key/">
 	<front>
 	  <title>Mashing with permission</title>
