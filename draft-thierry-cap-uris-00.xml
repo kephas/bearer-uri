@@ -395,8 +395,54 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
       </t>
       <t>
 	Once loaded, a trampoline document MUST attempt to modify the browser's address bar to
-	remove the fragment, to limit the possibility of an attacker to observe the capability-URI
-	on the user's screen.
+	remove the fragment as soon as possible, to limit the possibility of an attacker to observe
+	the capability-URI on the user's screen.
+      </t>
+      <t>
+	A trampoline document is a critical piece of the Trusted Computing Base (TCB) for the system
+	using it. As such, a trampoline document SHOULD be as minimal as possible and SHOULD be
+	audited with the most thorough methods available. A trampoline document MUST NOT load any
+	external resources. Any request it makes apart from the request for the capability-URI may
+	compromize the safety of that capability, even in indirect ways, so any stylesheet, image,
+	or executable code MUST be embedded as data in the document, either as regular content (like
+	a <tt>&lt;style&gt;</tt> or <tt>&lt;script&gt;</tt> element) or with a <tt>data:</tt> URL.
+	To minimize the surface attack, a trampoline document MUST be served with the following
+	header:
+	<list style="symbols">
+	  <t><tt>Content-Security-Policy</tt> (see <xref
+	target="csp"/>) with only the following directives:
+	  <list style="symbols">
+	    <t><tt>default-src 'none'</tt></t>
+	    <t>hashes</t>
+	  </list>
+	  </t>
+	</list>
+      </t>
+      <t>
+	It is RECOMMENDED that the resource identified by a trampoline URI be effectively
+	immutable. If any security issue is found with a trampoline document, it is called a
+	compromised trampoline document, and any web-cap whose trampoline URI identifies a
+	compromised trampoline document is called a trampoline-compromised web-cap. A compromised
+	trampoline document SHOULD not be served anymore and an application SHOULD NOT generate
+	trampoline-compromised web-caps. Any new web-caps SHOULD be issued with a new trampoline URI
+	that identifies a new, fixed trampoline document. It is RECOMMENDED that any capability that
+	is suspected to be reachable through a trampoline-compromised web-cap be revoked immediately
+	(see <xref target="revocation"/>).
+      </t>
+      <t>
+	To limit browsers requesting the trampoline document more than once, it is RECOMMENDED to
+	serve the trampoline document with the following header:
+	<list style="symbols">
+	  <t><tt>Cache-Control</tt> with only the following directives:
+	  <list style="symbols">
+	    <t><tt>max-age=2147483648</tt>: this is the highest value that is likely to be widely
+	    supported by caches and any cache not supporting numbers that big MUST consider any age
+	    it cannot represent in memory to be that value (see <xref target="RFC9111"/>, section
+	    1.2.2).</t>
+	    <t><tt>no-transform</tt></t>
+	    <t><tt>immutable</tt> (see <xref target="RFC8246"/>)</t>
+	  </list></t>
+	</list>
       </t>
       <t>
 	Because the fragment of a web-cap can be reliably identified as a capability-URI, a
@@ -406,6 +452,33 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
     </section>
 
     <section title="Security Considerations" anchor="sec">
+      <section title="Capability-URIs are credentials">
+	<t>
+	  While the intent of this specification is for the most sensitive part of a capability-URI
+	  to be the <tt>userinfo</tt> component of the generic URI syntax, any capability-URI MUST
+	  be treated as a whole as a credential. As such, the default behavior of an application
+	  using capability-URIs SHOULD be to never show a capability-URI unredacted.
+	</t>
+	<t>
+	  Is is NOT RECOMMENDED to put any sensitive authorization data outside of the
+	  <tt>userinfo</tt> component because the URI embedded in the capability-URI is vastly more
+	  likely to end up being leaked, first and foremost in application and server logs.
+	</t>
+	<t>
+	  It is NOT RECOMMENDED to rely on other applications to treat the <tt>userinfo</tt>
+	  component as sensitive information and handle it safely. An application using
+	  capabilty-URIs SHOULD redact them internally as soon as possible if it doesn't prevent the
+	  application from working correctly. When there is a safety trade-off on an application
+	  keeping capability-URIs vs. redacting them internally, an application SHOULD present users
+	  a choice.
+	</t>
+	<t>
+	  The use of <xref target="attenuation">attenuation</xref> and of <xref
+	  target="revocation">revocable</xref> capabilities with short lifetimes constitutes a
+	  second line of defence against leaks.
+	</t>
+      </section>
+
       <section anchor="notls" title="Using bearer tokens without TLS">
 	<t>
 	  <xref target="RFC6750"/> mandates the use of <xref target="RFC9846">TLS</xref> because
@@ -845,7 +918,9 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
       <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.6234.xml"/>
       <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.6455.xml"/>
       <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.6750.xml"/>
+      <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.8246.xml"/>
       <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.9110.xml"/>
+      <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.9111.xml"/>
       <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.9846.xml"/>
     </references>
 
@@ -982,6 +1057,15 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 	  <author fullname="Daniel Holmgren"/>
 	  <author fullname="Philipp Krüger"/>
 	  <author fullname="Brooklyn Zelenka"/>
+	</front>
+      </reference>
+
+      <reference anchor="csp"
+		 target="https://w3c.github.io/webappsec-csp/">
+	<front>
+	  <title>Content Security Policy Level 3</title>
+	  <author fullname="Mike West"/>
+	  <author fullname="Antonio Sartori"/>
 	</front>
       </reference>
 
