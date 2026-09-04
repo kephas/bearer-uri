@@ -71,6 +71,7 @@
 	  called capability-URI.
 	</t>
       </section>
+
       <section title="Architectural benefits">
 	<t>
 	  These URIs also deliver on the promises of several architectural decisions at the core of
@@ -113,6 +114,7 @@
 	  them by requesting again the resource where they appeared.
 	</t>
       </section>
+
       <section title="Conventions and Terminology">
         <t>
           The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD
@@ -199,6 +201,7 @@ bar
 	  for a base URI).
 	</t>
       </section>
+
       <section title="Relative URI references">
 	<t>
 	  The normal algorithm from <xref target="RFC3986"/> (section 5.2) applies to relative
@@ -221,6 +224,7 @@ bar
 	  <tt>cap-https://bt=D-nX3h-tDq_VtaYQKYYlDw@/baz</tt>.
 	</t>
       </section>
+
       <section title="Definitions">
 	<t>
 	  The four URI schemes are specified by the rules
@@ -281,12 +285,14 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 	  relative capability-URI.
 	</t>
       </section>
+
       <section title="Parameters">
 	<t>
 	  The <tt>authorization</tt> component of the capability-URI is made of a sequence of
 	  parameters. This specification defines two such parameters, but a future version can
 	  define more parameters, to support different authorization mechanisms.
 	</t>
+
 	<section title="Bearer token">
 	  <t>
 	    When the <tt>bearer-token-param</tt> component is present, the request MUST contain an
@@ -301,6 +307,7 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 	    scheme.
 	  </t>	 
 	</section>
+
 	<section anchor="token-format" title="Token format">
 	  <t>
 	    When the <tt>token-format-param</tt> component is present, it gives the format used for
@@ -317,6 +324,7 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 	    </tbody>
 	  </table>
 	</section>
+
 	<section title="Y-property certificate">
 	  <t>
 	    This parameter enables the <xref target="y-property" format="none">Y-property</xref>.
@@ -504,6 +512,7 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 	  the shape of some of the tokens used).
 	</t>
       </section>
+
       <section title="Capabilities must be unforgeable">
 	<t>
 	  For capabilities to enforce their security model, an attacker must not be able to create a
@@ -568,6 +577,7 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 	  </t>
 	</section>
       </section>
+
       <section title="POLA">
 	<t>
 	  The Principle of Least Authority says that every part of a system should only get the
@@ -615,6 +625,7 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 	  </t>
 	</t>
       </section>
+
       <section anchor="revocation" title="Revocation">
 	<t>
 	  If a web service just lets you create capabilities and send them out, they would be
@@ -663,6 +674,7 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 	  revoked, all the caretakers it created are revoked as well.
 	</t>
       </section>
+
       <section anchor="attenuation" title="Attenuation">
 	<t>
 	  Capability attenuation is a process that takes a capability as input and produces a new
@@ -689,6 +701,7 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 	  <tt>/Photos/Famly_annotations</tt>, an empty folder where the service can write the
 	  metadata it produces.
 	</t>
+
 	<section title="Attenuation by default">
 	  <t>
 	    When a service exposes authority through capability-URIs, like a file storage or a
@@ -717,6 +730,7 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 	    target="revocation">revocation</xref>.
 	  </t>
 	</section>
+
 	<section title="Attenuation by intermediary">
 	  <t>
 	    A service may provide access abstractions (like the caretaker) that aren't expressive
@@ -769,6 +783,7 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 	    access to a legacy service that isn't capability-based itself.
 	  </t>
 	</section>
+
 	<section anchor="offatt" title="Offline attenation">
 	  <t>
 	    Several capability systems use a cryptographical chain of certificates as a capability,
@@ -799,6 +814,7 @@ fragment      = &lt;fragment, see [RFC3986], Section 3.5>
 	  </t>
 	</section>
       </section>
+
       <section anchor="y-property" title="Y-Property">
 	<t>
 	  If Alice has a capability to Bob and Carol, and Alice sends a message to Bob with the
